@@ -1,0 +1,28 @@
+name: lattice_env
+
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python=3.10
+  - fpylll
+  - pytorch::pytorch
+  - pytorch-cuda=11.8
+  - torchmetrics
+  - pip
+  - pip:
+    - einops
+    - estimator
+    - joblib
+    - matplotlib
+    - numpy
+    - pandas
+    - polars
+    - scipy
+    - tabulate
+    - tqdm
+    - wandb
+    - chardet
