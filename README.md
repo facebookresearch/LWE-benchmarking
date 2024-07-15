@@ -11,14 +11,6 @@ Clone this repository to your machine that has at least one GPU.
 
 Install flatter by following the instructions on [Flatter Github](https://github.com/keeganryan/flatter)
 
-#### Option 1: Install with Pip [Doesn't have fpyLLL]
-Create a virtual environment via the following (first make sure you have the virtualenv): 
-```
-python3 -m venv ~/.lattice_venv
-source ~/.lattice_env/bin/activate
-pip install -r environment/requirements.txt
-```
-#### Option 2: Install with Conda
 Install a conda environment with the command:
 ```
 conda env create -f environment/environment.yml

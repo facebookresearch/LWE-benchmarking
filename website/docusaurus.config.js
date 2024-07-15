@@ -13,15 +13,16 @@ const config = {
   favicon: 'img/chart.svg',
 
   // Set the production url of your site here
-  url: 'https://docusaurus.io',
+  url: 'https://facebookresearch.github.io/',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/lattice-ml/',
+  baseUrl: '/LWE-benchmarking/',
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'fairinternal', // Usually your GitHub org/user name.
-  projectName: 'lattice-ml', // Usually your repo name.
+  organizationName: 'facebookresearch', // Usually your GitHub org/user name.
+  projectName: 'LWE-benchmarking', // Usually your repo name.
+  deploymentBranch: 'main', 
 
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
@@ -89,12 +90,12 @@ const config = {
                 to: '/docs/intro',
               },
               {
-                label: 'Benchmark',
-                to: 'benchmark'
+                label: 'Contribute',
+                to: '/docs/contribute'
               },
               {
-                label: 'Contribute',
-                to: 'contribute'
+                label: 'Benchmark',
+                to: 'benchmark'
               }
             ],
           },
