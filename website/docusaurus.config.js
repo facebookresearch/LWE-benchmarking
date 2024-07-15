@@ -22,7 +22,7 @@ const config = {
   // If you aren't using GitHub pages, you don't need these.
   organizationName: 'facebookresearch', // Usually your GitHub org/user name.
   projectName: 'LWE-benchmarking', // Usually your repo name.
-  deploymentBranch: 'main', 
+  trailingSlash: false,
 
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
