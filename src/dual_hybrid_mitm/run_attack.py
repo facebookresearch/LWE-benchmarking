@@ -13,17 +13,22 @@ import glob
 import sys
 import pickle as pkl
 from time import time
-import sys
+from tqdm import tqdm
 sys.path.append('.')
 from src.generate.genSamples import InterleavedReduction
-from tqdm import tqdm
-from utils import calc_std_mitm, compute_curr_mitm_params, mitm_params, polish
-import subprocess
-from scipy.linalg import circulant
+from utils import calc_std_mitm, mitm_params, polish
 from src.generate.lllbkz import get_mlwe_circ, centered, centered_int
+import subprocess
 import itertools
 
-### Runs USVP benchmark: define generic class and then subclasses based on setup.
+
+FLOAT_UPGRADE = {
+    'double': 'long double',
+    'long double': 'dd',
+    'dd': 'qd',
+    'qd': 'mpfr_250'
+}
+
 class DualHybrid(InterleavedReduction):
     ''' 
     Base class for the DualHybrid reduction
@@ -33,7 +38,6 @@ class DualHybrid(InterleavedReduction):
         self.logger = logger
         self.params = params
         self.N, self.Q= params.N, params.Q
-        self.d = params.N - params.k
         self.thread = thread
         self.longtype = np.log2(params.Q) > 30
         self.seed = [params.global_rank, params.env_base_seed, thread]
@@ -42,7 +46,7 @@ class DualHybrid(InterleavedReduction):
         self.export_path_prefix = os.path.join(params.dump_path, f"data_{thread}.prefix")
 
         # If interleaving, set up interleaving params:
-        self.stdev_tracker = [] # NOTE: for this, will be bound instead of stddev..
+        self.stdev_tracker = []
         self.prev_std = 10000 # Condition to only save off matrix if things improve.
         self.num_times_run = 0 
         self.lookback = self.params.lookback # number of steps over which to calculate (avg) decrease, must run given algo at least this many times before switching.
@@ -64,12 +68,13 @@ class DualHybrid(InterleavedReduction):
         self.mlwe_k = params.mlwe_k # if 0, then LWE, else RLWE with k number of modules. 
         self.k = params.k
         self.sigma = params.sigma
+        self.gamma = params.gamma
         self.hamming = params.hamming
         self.tau = params.tau
-        self.gamma = params.gamma
         self.m = params.N # rows of actual lattice, computed in dual_hybrid_mitm so it saves correctly. 
         self.mitm_alpha, self.scale = mitm_params(self.sigma, self.Q, self.N, self.hamming) # assume m == N
         self.num_tinyA_per_lattice = self.m if self.mlwe_k == 0 else self.mlwe_k # Number of tinyA used to construct lattice: If RLWE/MLWE, we stack k circulated vectors, 
+
 
         # Create A matrices and b vectors for this worker. 
         self.rng = np.random.RandomState(self.seed + [int(time())])
@@ -105,7 +110,6 @@ class DualHybrid(InterleavedReduction):
         self.idxs = []
         logger.info(f"DualHybrid reduction initialized: k = {self.k}, alpha = {self.mitm_alpha}, scale = {self.scale}")
 
-
     def setup_algos(self):
         # Set up function calls.
         if self.params.algo in ["BKZ", "BKZ2.0"]:
@@ -129,11 +133,11 @@ class DualHybrid(InterleavedReduction):
             err1 = self.rng.binomial(self.gamma, 0.5, shape)
             err2 = self.rng.binomial(self.gamma, 0.5, shape)
             return err1 - err2
-
+        
     def get_A_Ap(self):
         if self.curr_A_start_index + self.num_tinyA_per_lattice > len(self.tiny_A):
             assert False == True, "Ran out of vectors to sample from."
-        self.idxs = np.arange(self.curr_A_start_index, self.curr_A_start_index+self.num_tinyA_per_lattice) #rng.choice(len(self.tiny_A), size = m, replace=False)
+        self.idxs = np.arange(self.curr_A_start_index, self.curr_A_start_index+self.num_tinyA_per_lattice) 
         self.curr_A_start_index += self.num_tinyA_per_lattice # increment. 
         U = self.idxs.reshape((self.num_tinyA_per_lattice, 1))
         A = self.tiny_A[self.idxs]
@@ -156,11 +160,12 @@ class DualHybrid(InterleavedReduction):
         qvec[0] = self.Q
         qvec[1] = self.scale
         _A_save = np.vstack((_A1, qvec))
-        np.save(os.path.join(self.params.dump_path, f"temp_{randname}.npy"), _A_save) # TODO need to make this worker-specific if we parallelize.
+        np.save(os.path.join(self.params.dump_path, f"temp_{randname}.npy"), _A_save) 
 
         # Subprocess runs sage
         from sage_scripts.load_compute_dual import main
         main(os.path.join(self.params.dump_path, f"temp_{randname}.npy"))
+
         # Reload saved. 
         Ap = np.load(os.path.join(self.params.dump_path, f"temp_{randname}.npy"))
         if np.all(Ap == 0):
@@ -178,47 +183,6 @@ class DualHybrid(InterleavedReduction):
         Ra2 = centered((shortvec @ A2) % self.Q, self.Q)
         Rb = centered_int((shortvec @ b) % self.Q, self.Q) # Now this becomes error
         return Ra2, Rb
-
-    def get_good_bad_s(self, shortA, shortb):
-        AT = shortA.T
-        print(AT.shape)
-        sidx = np.where(self.s[-self.k:] != 0)[0]
-        svals = self.s[-self.k:][sidx] 
-        half_sk = len(sidx) // 2
-        firsthalf = centered(sum(AT[i]*s for i, s in zip(sidx[:half_sk], svals[:half_sk])) % self.Q, self.Q)
-        secondhalf = centered(sum(AT[i]*s for i, s in zip(sidx[half_sk:],svals[half_sk:])) % self.Q, self.Q)
-        bad = centered(sum(AT[i]*s for i, s in zip((0,1,2,3), (1,1,1,1))) % self.Q, self.Q) # just a bad secret. 
-        good1 = centered(((shortb - secondhalf) % self.Q -firsthalf) % self.Q, self.Q).astype(int)
-        bad1 = centered((shortb - bad) % self.Q, self.Q).astype(int)
-        return good1, bad1
-
-    def compute_bound_from_true_secret(self, shortvec):
-        ''' Actually computes the bound based on the true secret. '''
-        bvecs = self.tiny_B[self.idxs]
-        if self.mlwe_k > 0:
-            bvecs = np.hstack(bvecs)
-        A2 = self.tiny_A[self.idxs][:,-self.k:]
-        # If MLWE, circulate accordingly. 
-        if self.mlwe_k > 0:
-            a = []
-            for _a in self.tiny_A[self.idxs]:
-                a.append([get_mlwe_circ(_a, self.N // self.mlwe_k, self.mlwe_k)])
-            A2 = (np.squeeze(np.hstack(a)) % self.Q)[:,-self.k:]
-        bvecs = np.squeeze(bvecs) # Remove extra di
-        shortA, shortB = self.apply_short_vectors(shortvec, A2, bvecs)
-        true_secret_diffs, false_secret_diffs = self.get_good_bad_s(shortA, shortB)
-        # Compute the bound based on the true secret.
-        true_bound = np.max(np.abs(true_secret_diffs)) / self.Q
-        false_bound = np.max(np.abs(false_secret_diffs)) / self.Q
-        return true_bound, false_bound
-
-    def compute_bound_from_cheon_code(self, shortvec):
-        ''' Uses Cheon code bound ''' 
-        length =  np.linalg.norm(shortvec)
-        B = float(2 + 1/np.sqrt(2*np.pi)) * (self.mitm_alpha * self.Q)
-        B = B * B * self.N / (self.N + self.N) # in our code m == N
-        B = np.sqrt(B) * length / self.scale
-        return B / self.Q
 
     def compute_stdev(self, Ap, UT, use_polish=True, save=True, algo='flatter'):
         if use_polish:
@@ -250,7 +214,7 @@ class DualHybrid(InterleavedReduction):
             mat_to_save[-1, 2:min(2+len(self.stdev_tracker), 2+self.lookback)] = int_el if len(int_el) < self.lookback else int_el[-self.lookback:]
         mat_to_save[:, self.m:] = Y
         np.save(self.matrix_filename, mat_to_save)
-    
+
     def write(self, idxs, shortY):
         # Write the length of the short vector because we need it to compute b. 
         #assert X.shape[0] == Y.shape[0]
@@ -258,34 +222,52 @@ class DualHybrid(InterleavedReduction):
         prefix0_str = str(self.thread)
         prefix1_str = " ".join(idxs.astype(str)) # indexes of tinyA
         prefix2_str = " ".join(shortY.astype(str)) # short vector from lattice reduction
-        file_handler_prefix.write(f"{prefix0_str} ; {prefix1_str} ; {prefix2_str}\n")
+        file_handler_prefix.write(f"{prefix0_str} ; {prefix1_str} ; {prefix2_str}\n")#; {prefix3_str}\n")
         file_handler_prefix.flush()
         self.num_short += 1
 
+    def compute_bound_from_cheon_code(self, shortvec):
+        ''' Uses Cheon code bound ''' 
+        length =  np.linalg.norm(shortvec)
+        B = float(2 + 1/np.sqrt(2*np.pi)) * (self.mitm_alpha * self.Q)
+        B = B * B * self.N / (self.N + self.N) # in our code m == N
+        B = np.sqrt(B) * length / self.scale
+        return B / self.Q
 
     def check_for_param_upgrade(self, Ap, UT, newstddev, oldstddev=None):
         '''
         Estimates delta and B based on norm of shortest vector. 
         '''
-        norm = np.linalg.norm(Ap[0]) 
+        _, norm = calc_std_mitm(Ap, self.Q, self.N)
+
+        # TODO fix it: numpy can't do determinants in modular fields, so we pass to sage. This is gross. 
+        #B = compute_curr_mitm_params(self.params, self.thread, self.logger)
         B = self.compute_bound_from_cheon_code(Ap[0])
         self.logger.info(f"Bound from Cheon code={B} * Q")
-     
+
         # We want B < 0.25Q to ensure that error size is reasonable.
         # But in practice, we really only recover when B < 0.12Q, so let's use this. 
-        # also want to ensure we have at least a few nonzero elements?
+        # also want to ensure we have at least a few nonzero elements:
         # deals with weird case where initial reduction gives "short" vector that is all 0s except for one. 
         non_zeros = len(np.where(Ap[0] != 0)[0])
+
         if (B < 0.12) and (non_zeros >= 2): # TODO make this adjustable?
             self.logger.info(f'stddev = {newstddev}, norm={norm}. Exporting {self.matrix_filename}')
-            R = Ap[0] # Write the whole thing, deal with scale and index later. 
-            self.write(self.idxs, R) # Writes only the short vec, not A,b -- more extensible.   
+            R = Ap[0] # Write the whole thing
+            self.write(self.idxs, R) # Writes only the short vec, not A,b -- more extensible. 
             print(f"Written {self.num_short} vectors so far")
             if self.num_short >= self.tau // self.params.num_workers:
                 self.logger.info(f"Computed sufficient number of short vectors ({self.tau}, {self.tau // self.params.num_workers} per worker), exiting.")
-                return -1 # Worker has finished, end now.
+                return -1
             self.logger.info(f'Starting new matrix at {self.matrix_filename}')
             return False # You've reached the threshold, stop!
+    
+        if not self.upgraded and newstddev < self.params.threshold2:
+            # Go into Phase 2
+            self.upgraded = True
+            self.block_size, self.delta, self.alpha = self.params.bkz_block_size2, self.params.lll_delta2, self.params.alpha2
+            self.logger.info(f'Upgrading to delta = {self.delta}, block size = {self.block_size}, alpha = {self.alpha}')
+            return True
 
         # See if polishing helped at all -- BKZ only.
         if (oldstddev is not None) and (oldstddev - newstddev > 0):
@@ -298,9 +280,6 @@ class DualHybrid(InterleavedReduction):
             A_Ap = np.load(self.matrix_filename)
             UT, Ap = A_Ap[:, :self.num_tinyA_per_lattice], A_Ap[:, self.m:]
             algo_indicator = A_Ap[-1,0]
-            self.block_size = int(A_Ap[-1,2]) # Get it out of the matrix. 
-            self.delta = self.params.lll_delta
-            self.alpha = self.params.alpha
             if algo_indicator != 0:
                 self.num_times_run = A_Ap[-1,1]
                 self.stdev_tracker = np.array(A_Ap[-1,2:self.lookback+2])
@@ -316,13 +295,12 @@ class DualHybrid(InterleavedReduction):
                 self.setup_algos() # Redo algorithms now that you have changed things. 
                 self.logger.info('Different algorithm detected in saved-off matrix: starting with algorithm={}'.format(self.params.algo))
         else:
-            self.block_size = self.params.bkz_block_size
-            self.delta = self.params.lll_delta
-            self.alpha = self.params.alpha
             U, Ap = self.get_A_Ap()
             UT = U.T # To have num_cols = m, U and A are always transposed
 
-        
+        # Params/upgrades for BKZ/flatter.
+        self.upgraded = False
+        self.block_size, self.delta, self.alpha = self.params.bkz_block_size, self.params.lll_delta, self.params.alpha
 
         param_change = True
         while param_change:
@@ -353,21 +331,21 @@ class MITM(object):
         self.N = params.N
         self.Q = params.Q
         self.hamming = params.mitm_hamming # NOTE: need to use Hamming from reduction to get right scale, see below. 
+        self.tau = params.tau
         self.sigma = params.sigma
         self.gamma = params.gamma
-        self.tau = params.tau
-        self.rng = np.random.RandomState(int(time()))
         if self.tau < 0: # Didn't set a limit. 
             self.tau = self.k
 
         assert self.k > 0 and self.tau > 0, "Must have k and tau > 0."
 
-        self.m = self.N 
+        self.m = self.N #if params.mlwe_k == 0 else params.mlwe_k 
         self.num_tinyA_per_lattice = self.N if params.mlwe_k == 0 else params.mlwe_k # Number of tinyA used to construct lattice: If RLWE/MLWE, we are just going to circulate a single line.
 
         secrets = np.load(os.path.join(params.secret_path, 'secret.npy'))
+        print(secrets.shape,params.secret_path, self.hamming, params.secret_seed)
         cols = np.where(np.sum(secrets != 0, axis=0) == self.hamming)[0]
-        assert len(cols) > params.secret_seed, f"Secret seed ({params.secret_seed})is higher than number of available secrets ({len(cols)})"
+        assert len(cols) > params.secret_seed 
         self.s = np.squeeze(secrets[:, cols[params.secret_seed]])
         if params.secret_path[-1] == '/':
             params.secret_path = params.secret_path[:-1] # Get rid of extra /
@@ -379,6 +357,7 @@ class MITM(object):
         self.logger.info(f"Secret is: {self.s}")
         self.logger.info(f"Secret to guess is: {self.s[-self.k:]}, nonzero elements: {np.where(self.s[-self.k:] != 0)}")
 
+    
     def get_error(self, shape):
         if self.secret_type != 'binomial':
             return self.rng.normal(0, self.sigma, size=shape).round().astype(np.int64)
@@ -388,15 +367,15 @@ class MITM(object):
             return err1 - err2
         
 
-    def create_Bs(self, A_path, origA, seed):
+    def create_Bs(self,A_path, origA, seed):
         if self.mlwe_k == 0:
-            e = self.get_error(len(self.tiny_A)) #np.random.normal(0,self.sigma, size=len(self.tiny_A)).round().astype(np.int64) 
+            e = self.get_error(len(self.tiny_A))
             self.tiny_B = (origA @ self.s + e) % self.Q
         else:
             tiny_B = []
             for a in origA:
                 circA = get_mlwe_circ(a, self.N // self.mlwe_k, self.mlwe_k) % self.Q
-                e = self.get_error(len(circA)) #np.random.normal(0,self.sigma, size=len(circA)).round().astype(np.int64) 
+                e = self.get_error(len(circA)) 
                 tiny_B.append((circA @ self.s + e) % self.Q)
             self.tiny_B = np.array(tiny_B)
         np.save(os.path.join(A_path, f"Bvecs_{int(seed)}_{self.secret_type}_h_{self.hamming}_seed_{self.params.secret_seed}.npy"), self.tiny_B)
@@ -412,15 +391,16 @@ class MITM(object):
                     seed, idx, sv = line.strip().split(";")
                     seed = np.float64(seed.lstrip()) 
                     idx = np.array(idx.split(), dtype=np.int64)
-                    sv = np.array(sv.split(), dtype=np.float64) #np.array(r.split(), dtype=np.float64)
+                    sv = np.array(sv.split(), dtype=np.float64) 
                     yield seed, idx, sv
                 elif len(splitit) == 4:
                     seed, idx, sv, A_path = line.strip().split(";")
                     seed = np.float64(seed.lstrip()) 
                     idx = np.array(idx.split(), dtype=np.int64)
-                    sv = np.array(sv.split(), dtype=np.float64) #np.array(r.split(), dtype=np.float64)
+                    sv = np.array(sv.split(), dtype=np.float64) 
                     A_path = ''.join(A_path)
                     yield seed, idx, sv, A_path
+
 
     def remove_redundant_rows(self, path):
         seed, shortvec, idx = [], [], []
@@ -486,6 +466,7 @@ class MITM(object):
             A = origA[i]
             bvecs = origB[i]
 
+
             # If MLWE, circulate accordingly. 
             if self.mlwe_k > 0:
                 a = []
@@ -493,6 +474,7 @@ class MITM(object):
                     a.append([get_mlwe_circ(_a, self.N // self.mlwe_k, self.mlwe_k)])
                 A2 = (np.squeeze(np.hstack(a)) % self.Q)[:,-self.k:]
                 bvecs = np.hstack(bvecs) # Just stack them. 
+                a = np.squeeze(np.hstack(a))
             else:
                 A2 = A[:,-self.params.k:]
             bvecs = np.squeeze(bvecs) # Remove extra dim
@@ -519,19 +501,7 @@ class MITM(object):
         B = (2 + 1 / np.sqrt(2 * np.pi)) * (self.mitm_alpha * self.Q)
         B = B * B * self.k / (self.k + self.N) # TODO using self.k instead of self.m since we need a square matrix, so guessed matrix is really k x k. 
         B = np.sqrt(B) * length / self.scale 
-
-        # # B definition from Cheon paper is used during short vector finding.
-        # DOES NOT WORK
-        # # Compute average B from all the params saved off. 
-        # B_vals = []
-        # paths = glob.glob(os.path.join(self.short_vectors_path, "current_mitm_params_*.npy"))
-        # if len(paths) == 0:
-        #     paths = glob.glob(os.path.join(self.short_vectors_path, "./*/current_mitm_params_*.npy"))
-        # for p in paths:
-        #     b_d = np.load(p)
-        #     B_vals.append(b_d[0])
-        # B = np.mean(B_vals) 
-
+ 
         if self.params.bound < 0:
             self.bound = B # This is the bound we will use for the MITM attack.
         else:
@@ -574,8 +544,8 @@ class MITM(object):
                         self.logger.info(f"diff: {diff}")
                         self.logger.info(f"bound = {self.bound}, metrics on diff - norm: {np.linalg.norm(diff, np.inf)}, mean: {np.mean(np.abs(diff))}, std: {np.std(np.abs(diff))}, median: {np.median(np.abs(diff))}")
                         self.logger.info(f"guess = {s}, {sgn}; other half = {orig_s}; true = {np.nonzero(self.s[-self.k:])}, {self.s[-self.k:][np.nonzero(self.s[-self.k:])[0]]}")
-                           # NOTE: using the linalg norm lets outliers dominate, which is bad. 
-                        if np.median(np.abs(diff)) < self.bound: 
+                        # NOTE: using the linalg norm lets outliers domination, which is bad. 
+                        if np.median(np.abs(diff)) < self.bound:
                             return (s, sgn)
         else:
             for i in [0,1]:
@@ -592,6 +562,9 @@ class MITM(object):
         # Input T is a hash table from S
         # If no such v, return None
         sgnvec, boundary_idx = self.get_boundary_elements(query)
+
+        #print(f"Current # of boundary elements to check: {len(boundary_idx)}")
+    
         if len(boundary_idx) == len(sgnvec):
             return [0] * len(query) # Everything is on the boundary
 
@@ -610,7 +583,7 @@ class MITM(object):
    
         # Cheating, just to get a sense of where the secret bits are. 
         sidx = np.where(self.s[-self.k:] != 0)[0]
-        svals = self.s[-self.k:][sidx] #np.where(self.s[-self.k:] != 0)[0]
+        svals = self.s[-self.k:][sidx]
         half_sk = len(sidx) // 2
         firsthalf = centered(sum(AT[i]*s for i, s in zip(sidx[:half_sk], svals[:half_sk])) % self.Q, self.Q)
         secondhalf = centered(sum(AT[i]*s for i, s in zip(sidx[half_sk:],svals[half_sk:])) % self.Q, self.Q)
@@ -624,8 +597,8 @@ class MITM(object):
         self.logger.info(good2)
         self.logger.info(f'Stats on bad: max={np.max(bad1)}, median={np.median(np.abs(bad1))}, mean={ np.mean(np.abs(bad1))}')
         self.logger.info(bad1)
-
-
+        if self.params.debug==True:
+            input()
         for h in range(1, half):
             signbits = list(itertools.product(bits, repeat=h)) # Get the different permutations of secret bit values for this h guess. 
             secret_combs = list(itertools.combinations(range(self.k), h))
@@ -641,11 +614,12 @@ class MITM(object):
 
                     # Now check and see if the inverse is in this. 
                     query = centered((shortb - b1) % self.Q, self.Q)
-                    sys.stdout.write("\033[F")
-                    sys.stdout.write("\033[K")
-
+                    if self.params.debug == True:
+                        sys.stdout.write("\033[F")
+                        sys.stdout.write("\033[K")
+                        print('Number of noisy searches = %d' % count)
                     count += 1
-                    print('Number of noisy searches = %d' % count)
+
                     if count > (len(signbits)): # Skip querying on first element. 
                         guess_s2 = self.noisy_search(query, AT, T, orig_s=s1)
                     else:
@@ -669,7 +643,9 @@ class MITM(object):
 
                         # Check for correctness
                         A_s = sum(AT[i]*s for i, s in zip(_s1, s1_sign)) % self.Q
+                        #bad_A_s = sum(AT[i]*s for i, s in zip(_s1[:-2], s1_sign[:-2])) % self.Q
                         resid  = np.abs(centered((shortb - A_s) % self.Q, self.Q))
+                        #bad_resid = np.abs(centered((shortb - bad_A_s) % self.Q, self.Q))
                         self.logger.info(f"residuals:{resid}")
                         self.logger.info(f"metrics on resid - norm: {np.linalg.norm(resid, np.inf)}, mean: {np.mean(resid)}, std: {np.std(resid)}, median: {np.median(resid)}")
                         if np.median(resid) < self.bound: #np.linalg.norm(resid, np.inf) < self.bound:
@@ -696,7 +672,7 @@ class MITM(object):
             print(f"Half of h is {half}, true bits to guess is {s_half_true}")
             half = s_half_true
         # Faster way to do this
-        self.build_and_search(shortA, shortb, half)
+        self.build_and_search(shortA, shortb, int(half))
 
     def run(self):
         # First, load in the short vector data.

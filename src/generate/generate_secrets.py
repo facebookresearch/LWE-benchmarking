@@ -11,12 +11,13 @@ The main arguments:
 
 --processed_dump_path: the directory with data_*.prefix files, or the parent of that directory. See the NOTE in the comments.
 --secret_type: binary, ternary, gaussian, binomial. Look at the SecretFactory classes.
---actions: one or more of "secrets", "plot", and "describe"
-    * secrets: generate new secrets using --min_hamming, --max_hamming, etc
+--actions: one or more of "secrets", "only_secrets", "plot", "describe"
+    * secrets: given A data, generate new secrets using --min_hamming, --max_hamming, etc., and associated b data.
+    * only_secrets: given N, min_hamming, max_hamming, and secret type, generate only the secret.npy file (useful for uSVP and MiTM attacks).
     * plot: plot reduction levels for RA and save to the output directory.
     * describe: calculate a lot of statistics about the generated data.
 
-python generate_secrets.py --processed_dump_path /checkpoint/nolte/crypto_data/debug_concurrent_writing/18045407/ --exp_name debug --dump_path /checkpoint/$USER/data/debug --secret_type binary --num_secret_seeds 10 --min_hamming 1 --max_hamming 20 --actions secrets plot describe
+python generate_secrets.py --processed_dump_path /path/to/preprocessed/data/ --exp_name debug --dump_path /path/to/dump/data --secret_type binary --num_secret_seeds 10 --min_hamming 1 --max_hamming 20 --actions secrets plot describe
 
 This will make some binary secrets with hamming weights from 1 to 20 and describe the outputs.
 
@@ -58,6 +59,7 @@ import sys
 import time
 import numpy as np
 from tqdm import tqdm
+sys.path.append(".")
 from src.generate.lllbkz import get_mlwe_circ, centered
 from src.utils import human, init_rng, initialize_exp, mod_mult_torch, read, remove_redundant_rows, shift_negate, shuffled
 

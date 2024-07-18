@@ -150,6 +150,13 @@ def decode_intmat(out):
 
 
 def centered(arr, q):
+    try:
+        return centered_arr(arr, q)
+    except Exception as e:
+        print("exception ", e)
+        return centered_int(arr, q)
+
+def centered_arr(arr, q):
     arr = arr.copy()
     arr[arr >  q // 2] -= q
     return arr

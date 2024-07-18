@@ -54,22 +54,26 @@ Example run commands:
 `python3 src/cruel_cool/main.py --path /checkpoint/eshika/data/sp_paper/training_data/A_b_1024_26_omega10_rlwe/ternary_8_9/ --exp_name demo --greedy_max_data 100000 --keep_n_tops 1 --batch_size 10000 --compile_bf 0 --mlwe_k 1 --secret_window -1  --full_hw 9 --secret_type ternary --bf_dim 750 --min_bf_hw 1 --max_bf_hw 5 --seed 0`
 
 ### Running the USVP Attack
+First, generate a secret to use in the test attack via the command:
+`python3 src/generate/generate_secrets.py --N 32 --secret_type binary --min_hamming 5 --max_hamming 10 --exp_id usvp_secrets --dump_path /wherever/you/want/ --processed_dump_path ./`
+
 Run the following script:
 * `usvp/usvp.py`: Runs the USVP attack on a randomly generated LWE matrix
   
 Example run commands:
 
-`python3 src/usvp/usvp.py --N 1024 --Q 41223389 --algo BKZ --secret_path /checkpoint/eshika/data/sp_paper/training_data/A_b_1024_26_omega10_rlwe/ternary_8_9/ --hamming 9`
+`python3 src/usvp/usvp.py --N 32 --Q 967 --algo BKZ2.0 --secret_path /parent/path/of/secret/file/ --hamming 6`
 
 ### Running the MITM Attack
 Make sure you have a conda environment with sage installed - can use /private/home/ewenger/.conda/envs/sage for now
 
 Example commands:
-First run
-```python3 dual_hybrid_mitm/dual_hybrid_mitm.py --dump_path ./ --exp_name dbug_mitm --k 30 --N 45 --Q 11197 --hamming 10 --exp_id mitm_binomial_test --num_workers 10 --step reduce --tau 30 --mlwe_k 3```
+Make sure you have generated a secret, as described in the uSVP section above.
+Then run
+```python3 src/dual_hybrid_mitm/dual_hybrid_mitm.py --dump_path ./ --exp_name dbug_mitm --k 16 --N 32 --Q 11197 --hamming 5 --exp_id mitm_binomial_test --num_workers 10 --step reduce --tau 30 --mlwe_k 1 --secret_path /parent/path/of/secret/file/```
 
 Then run 
-```python3 dual_hybrid_mitm/dual_hybrid_mitm.py --step mitm --short_vectors_path ./dbug_mitm/mitm_binomial_test/ --secret_seed 2 --bound 100 --secret_path /checkpoint/ewenger/sp_paper/usvp_secrets/usvp_N45_binomial_10_20 --hamming 10 --gamma 2```
+```python3 dual_hybrid_mitm/dual_hybrid_mitm.py --step mitm --short_vectors_path ./dbug_mitm/mitm_binomial_test/ --secret_seed 2 --bound 100 --secret_path /parent/path/of/secret/file/ --hamming 5 --short_vectors_path ./dbug_mitm/mitm_binomial_test/``` (change short vectors path if you modified dump path, exp_name, or exp_id in the first command)
 
 Whole experiment should take about 2 minutes. 
 

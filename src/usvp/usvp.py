@@ -83,6 +83,7 @@ def get_parser():
     parser.add_argument(
         "--hamming", type=int, default=-1, help="hamming weight of secret"
     )
+    parser.add_argument("--secret_type", type=str, required=True, help="what secret distribution? Should match that in secret_path.")
 
     # Reduction parameters
     parser.add_argument(
@@ -170,7 +171,7 @@ def get_data_one_worker(i, params):
     logger = create_this_logger(params)
     if not os.path.isfile(os.path.join(params.dump_path, "results.pkl")):
         keys = []
-        for expNum in range(5):  # fixed 5 experiments per hamming weight for now
+        for expNum in range(10):  # fixed 5 experiments per hamming weight for now
             keys += [(expNum, params.hamming), (expNum, params.hamming - 1)]
         pickle.dump(
             dict([(key, []) for key in keys]),
@@ -217,23 +218,13 @@ if __name__ == "__main__":
     params = parser.parse_args()
     params.cpu, params.debug_slurm = True, False
 
-    # Copy the params file up from an experiment subdirectory, if it doesn't exist in reload_data.
-    if not os.path.exists(os.path.join(params.secret_path, "params.pkl")):
-        subdir = glob(os.path.join(params.secret_path, "*"))[0]
-        src = os.path.join(subdir, "params.pkl")
-        dst = os.path.join(params.secret_path, "params.pkl")
-        shutil.copy(src, dst)
-    loaded_params = pickle.load(
-        open(os.path.join(params.secret_path, "params.pkl"), "rb")
-    )
-    if type(loaded_params) != dict:
-        loaded_params = loaded_params.__dict__
-    params.N, params.Q = loaded_params["N"], loaded_params["Q"]
+    assert params.N > 0 and params.Q > 0 and params.hamming > 0
+
     params.threshold, params.threshold1, params.threshold2 = [
         float(th) for th in params.thresholds.split(",")
     ]
     params.sigma = 3  # dummy
-    params.secret_type = loaded_params.get("secret_type", "binary")
+    params.secret_type = params.secret_type
 
     # run experiment
     main(params)
