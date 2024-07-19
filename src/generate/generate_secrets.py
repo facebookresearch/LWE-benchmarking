@@ -75,7 +75,7 @@ def get_params():
     user = getpass.getuser()
     parser.add_argument("--dump_path", default=f"/checkpoint/{user}/dumped")
     parser.add_argument(
-        "--exp_name", default="generated_secrets", help="Experiment name"
+        "--exp_name", default="secrets", help="Experiment name"
     )
     parser.add_argument("--exp_id", default="", help="Experiment ID")
     parser.add_argument(
@@ -596,10 +596,11 @@ if __name__ == "__main__":
      # If you're running only_secrets, you only want secret.npy file. 
     if "only_secrets" in params.actions: 
         # Just make the secret file and exit.
+        params.dump_path = os.path.dirname(params.dump_path) # We have custom experiment ID for only secrets.
 
         # Make a path to dump the secrets
         params.secret_dir = os.path.join(params.dump_path,
-        f"usvp_N{params.N}_{params.secret_type}_{params.min_hamming}_{params.max_hamming}",
+        f"secret_N{params.N}_{params.secret_type}_{params.min_hamming}_{params.max_hamming}",
         )
         os.makedirs(params.secret_dir, exist_ok=True)
 

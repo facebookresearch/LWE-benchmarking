@@ -369,7 +369,7 @@ class MITM(object):
 
     def create_Bs(self,A_path, origA, seed):
         if self.mlwe_k == 0:
-            e = self.get_error(len(self.tiny_A))
+            e = self.get_error(len(origA))
             self.tiny_B = (origA @ self.s + e) % self.Q
         else:
             tiny_B = []

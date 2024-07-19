@@ -9,7 +9,7 @@
 ## Installation and Setup
 Clone this repository to your machine that has at least one GPU.
 
-Install flatter by following the instructions on [Flatter Github](https://github.com/keeganryan/flatter)
+Install flatter by following the instructions on [Flatter Github](https://github.com/keeganryan/flatter). Make sure it is symlinked correctly so it runs on your machine when you type the command "flatter". 
 
 Install a conda environment with the command:
 ```
@@ -55,25 +55,24 @@ Example run commands:
 
 ### Running the USVP Attack
 First, generate a secret to use in the test attack via the command:
-`python3 src/generate/generate_secrets.py --N 32 --secret_type binary --min_hamming 5 --max_hamming 10 --exp_id usvp_secrets --dump_path /wherever/you/want/ --processed_dump_path ./`
+`python3 src/generate/generate_secrets.py --N 32 --secret_type binary --min_hamming 5 --max_hamming 10 --dump_path ./data --processed_dump_path ./ --actions only_secrets`
 
 Run the following script:
 * `usvp/usvp.py`: Runs the USVP attack on a randomly generated LWE matrix
   
 Example run commands:
 
-`python3 src/usvp/usvp.py --N 32 --Q 967 --algo BKZ2.0 --secret_path /parent/path/of/secret/file/ --hamming 6`
+`python3 src/usvp/usvp.py --N 32 --Q 967 --algo BKZ2.0 --secret_path ./data/secrets/secret_N32_binary_5_10/ --hamming 6 --secret_type binary`
 
 ### Running the MITM Attack
-Make sure you have a conda environment with sage installed - can use /private/home/ewenger/.conda/envs/sage for now
+Generate a secret, as described in the uSVP section above.
 
 Example commands:
-Make sure you have generated a secret, as described in the uSVP section above.
 Then run
-```python3 src/dual_hybrid_mitm/dual_hybrid_mitm.py --dump_path ./ --exp_name dbug_mitm --k 16 --N 32 --Q 11197 --hamming 5 --exp_id mitm_binomial_test --num_workers 10 --step reduce --tau 30 --mlwe_k 1 --secret_path /parent/path/of/secret/file/```
+```python3 src/dual_hybrid_mitm/dual_hybrid_mitm.py --dump_path ./ --exp_name test_mitm --k 16 --N 32 --Q 11197 --hamming 6 --exp_id mitm_binomial_test --num_workers 10 --step reduce --tau 30 --secret_seed 2 --secret_path ./data/secrets/secret_N32_binary_5_10/```
 
 Then run 
-```python3 dual_hybrid_mitm/dual_hybrid_mitm.py --step mitm --short_vectors_path ./dbug_mitm/mitm_binomial_test/ --secret_seed 2 --bound 100 --secret_path /parent/path/of/secret/file/ --hamming 5 --short_vectors_path ./dbug_mitm/mitm_binomial_test/``` (change short vectors path if you modified dump path, exp_name, or exp_id in the first command)
+```python3 src/dual_hybrid_mitm/dual_hybrid_mitm.py --step mitm --secret_seed 2 --bound 100 --secret_path ./data/secrets/secret_N32_binary_5_10/ --hamming 6 --short_vectors_path ./test_mitm/mitm_binomial_test/ --secret_type binary``` (change short vectors path if you modified dump path, exp_name, or exp_id in the first command)
 
 Whole experiment should take about 2 minutes. 
 
