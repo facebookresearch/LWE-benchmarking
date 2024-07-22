@@ -209,7 +209,7 @@ if __name__ == '__main__':
         params = dual_params # just use the same params as before.
         params.local_rank = -1
         params.step = 'mitm' # Set the right flag.
-        params.num_workers = 1 # Only one guy can look at the table.
+        params.num_workers = 1 # Only one fellow can look at the table.
         params.dump_path = os.path.dirname(params.dump_path)
         params.exp_name = params.exp_id
         idx=0

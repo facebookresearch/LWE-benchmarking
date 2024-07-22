@@ -240,18 +240,16 @@ class DualHybrid(InterleavedReduction):
         '''
         _, norm = calc_std_mitm(Ap, self.Q, self.N)
 
-        # TODO fix it: numpy can't do determinants in modular fields, so we pass to sage. This is gross. 
-        #B = compute_curr_mitm_params(self.params, self.thread, self.logger)
+        # Numpy can't do determinants in modular fields, so we pass to sage. This is gross. 
         B = self.compute_bound_from_cheon_code(Ap[0])
         self.logger.info(f"Bound from Cheon code={B} * Q")
 
         # We want B < 0.25Q to ensure that error size is reasonable.
-        # But in practice, we really only recover when B < 0.12Q, so let's use this. 
-        # also want to ensure we have at least a few nonzero elements:
-        # deals with weird case where initial reduction gives "short" vector that is all 0s except for one. 
+        # But in practice, we only recover recrets when B < 0.12Q, so use this. 
+        # Also want to ensure we have at least a few nonzero elements: deals with weird case where initial reduction gives "short" vector that is all 0s except for one. 
         non_zeros = len(np.where(Ap[0] != 0)[0])
 
-        if (B < 0.12) and (non_zeros >= 2): # TODO make this adjustable?
+        if (B < 0.12) and (non_zeros >= 2): # Future work: set this as a parameter.
             self.logger.info(f'stddev = {newstddev}, norm={norm}. Exporting {self.matrix_filename}')
             R = Ap[0] # Write the whole thing
             self.write(self.idxs, R) # Writes only the short vec, not A,b -- more extensible. 
@@ -273,7 +271,7 @@ class DualHybrid(InterleavedReduction):
         if (oldstddev is not None) and (oldstddev - newstddev > 0):
             self.logger.info(f'stddev reduction: {oldstddev - newstddev} from polishing. ')
             return True
-        return None # if you return None, it means you didn't meet any of these criteria; just keep going 
+        return None # if you return None, you didn't meet criteria; keep going 
 
     def generate(self):
         if os.path.isfile(self.matrix_filename):
@@ -544,7 +542,7 @@ class MITM(object):
                         self.logger.info(f"diff: {diff}")
                         self.logger.info(f"bound = {self.bound}, metrics on diff - norm: {np.linalg.norm(diff, np.inf)}, mean: {np.mean(np.abs(diff))}, std: {np.std(np.abs(diff))}, median: {np.median(np.abs(diff))}")
                         self.logger.info(f"guess = {s}, {sgn}; other half = {orig_s}; true = {np.nonzero(self.s[-self.k:])}, {self.s[-self.k:][np.nonzero(self.s[-self.k:])[0]]}")
-                        # NOTE: using the linalg norm lets outliers domination, which is bad. 
+                        # NOTE: using the linalg norm lets outliers dominate, which is bad, so we use median value instead. 
                         if np.median(np.abs(diff)) < self.bound:
                             return (s, sgn)
         else:
@@ -562,11 +560,9 @@ class MITM(object):
         # Input T is a hash table from S
         # If no such v, return None
         sgnvec, boundary_idx = self.get_boundary_elements(query)
-
-        #print(f"Current # of boundary elements to check: {len(boundary_idx)}")
     
         if len(boundary_idx) == len(sgnvec):
-            return [0] * len(query) # Everything is on the boundary
+            return [0] * len(query) # Everything is on the boundary, bad news :(
 
         v = self.check_collision(query, A, sgnvec, Table, boundary_idx, index_num = 0, orig_s=orig_s)
         return v
@@ -581,7 +577,7 @@ class MITM(object):
         count = 0
         bits = [el for el in np.unique(self.s[self.s != 0])] # Get nonzero secret bit values. 
    
-        # Cheating, just to get a sense of where the secret bits are. 
+        # Cheating, just to get a sense of where the secret bits are. We don't use this info to recover secret. 
         sidx = np.where(self.s[-self.k:] != 0)[0]
         svals = self.s[-self.k:][sidx]
         half_sk = len(sidx) // 2
@@ -599,6 +595,7 @@ class MITM(object):
         self.logger.info(bad1)
         if self.params.debug==True:
             input()
+
         for h in range(1, half):
             signbits = list(itertools.product(bits, repeat=h)) # Get the different permutations of secret bit values for this h guess. 
             secret_combs = list(itertools.combinations(range(self.k), h))
@@ -643,12 +640,10 @@ class MITM(object):
 
                         # Check for correctness
                         A_s = sum(AT[i]*s for i, s in zip(_s1, s1_sign)) % self.Q
-                        #bad_A_s = sum(AT[i]*s for i, s in zip(_s1[:-2], s1_sign[:-2])) % self.Q
                         resid  = np.abs(centered((shortb - A_s) % self.Q, self.Q))
-                        #bad_resid = np.abs(centered((shortb - bad_A_s) % self.Q, self.Q))
                         self.logger.info(f"residuals:{resid}")
                         self.logger.info(f"metrics on resid - norm: {np.linalg.norm(resid, np.inf)}, mean: {np.mean(resid)}, std: {np.std(resid)}, median: {np.median(resid)}")
-                        if np.median(resid) < self.bound: #np.linalg.norm(resid, np.inf) < self.bound:
+                        if np.median(resid) < self.bound: 
                             self.logger.info("Found a secret match!")
                             s = np.zeros(self.k) 
                             for i, sval in zip(_s1, s1_sign):
@@ -666,7 +661,7 @@ class MITM(object):
             half = self.hamming // 2
         else:
             half = self.hamming // 2 + 1
-        # CHEAT and make sure that sufficient bits are in table: 
+        # Make sure that sufficient bits are in table: 
         s_half_true = self.s[-self.k:].sum()
         if half < s_half_true:
             print(f"Half of h is {half}, true bits to guess is {s_half_true}")

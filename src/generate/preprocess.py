@@ -80,7 +80,7 @@ def get_parser():
         type=bool_flag,
         default=False,
         help="Run preprocessing using RLWE matrix format rather than LWE",
-    )  # EJW 12/14/23 remove
+    ) 
     parser.add_argument("--N", type=int, default=-1, help="dimension of matrix")
     parser.add_argument("--Q", type=int, default=-1, help="modulo")
 

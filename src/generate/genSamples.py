@@ -113,9 +113,9 @@ class Generator(object):
         rng = np.random.RandomState(self.seed + [int(time())])
         idxs = rng.choice(len(self.tiny_A), size=m, replace=False)
         U = idxs.reshape((m, 1))
-        if not self.params.rlwe:  # LWE FIXME EJW 12/14/23 - restore when done!
+        if not self.params.rlwe: 
             A = self.tiny_A[idxs, -d:]
-        else:  # RLWE FIXME EJW 12/14/23 - remove when done!
+        else: # Typically, we preprocess as LWE, not RLWE, but the RLWE option exists. 
             A = self.rlwe_circ(self.tiny_A[idxs[0], -d:])  # just take the first vector
 
         assert np.max(A) - np.min(A) < Q

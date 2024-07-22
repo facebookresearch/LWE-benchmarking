@@ -48,7 +48,7 @@ def mitm_params(sigma, Q, m, hamming):
     m = # vectors in lattice.  
     '''
     alpha = sigma / Q
-    scale = np.round(alpha * Q * np.sqrt(m) / np.sqrt(2 * np.pi * hamming)) # lifted straight from Cheon code, in the paper this is calculated wrt a short vector in an orthogonal lattice. 
+    scale = np.round(alpha * Q * np.sqrt(m) / np.sqrt(2 * np.pi * hamming)) # from Cheon code, in the paper this is calculated wrt a short vector in an orthogonal lattice. 
     return alpha, scale
 
 def calc_std_mitm(X, Q, m):

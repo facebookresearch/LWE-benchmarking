@@ -11,7 +11,7 @@ import sys
 from sage.all import matrix, identity_matrix, GF, ZZ
 
 def get_dual_instance(A, scale=1):
-    # This is lifted from Cheon code, which is in Sage.
+    # Adapted from https://github.com/swanhong/HybridLWEAttack/blob/master/Implement/Mitm.py
     q = A.base_ring().order()
     n = A.ncols()
     m = A.nrows()
