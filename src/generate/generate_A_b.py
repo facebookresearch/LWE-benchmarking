@@ -61,7 +61,7 @@ import numpy as np
 from tqdm import tqdm
 sys.path.append(".")
 from src.generate.lllbkz import get_mlwe_circ, centered
-from src.utils import human, init_rng, initialize_exp, mod_mult_torch, read, remove_redundant_rows, shift_negate, shuffled
+from src.utils import create_this_logger, human, init_rng, mod_mult_torch, read, remove_redundant_rows, shift_negate, shuffled
 
 
 def get_params():
@@ -293,10 +293,15 @@ def generate(test_size=10000):
     else:
         raise ValueError(params.secret_type)
 
-    logger.info("Creating %s secret", secret_factory.type_)
-    secret = secret_factory.new(
-        params.N, params.min_hamming, params.max_hamming, params.num_secret_seeds
-    )
+    secret_path = os.path.join(params.secret_dir, "secret.npy")
+    if not os.path.isfile(secret_path):
+        logger.info("Creating %s secret", secret_factory.type_)
+        secret = secret_factory.new(
+            params.N, params.min_hamming, params.max_hamming, params.num_secret_seeds
+        )
+    else: 
+        logger.info("Loading secret from %s", secret_path)
+        secret = np.load(secret_path)
 
     h_range = range(params.min_hamming, params.max_hamming + 1)
     num_secrets = len(h_range) * params.num_secret_seeds
@@ -421,7 +426,8 @@ def generate(test_size=10000):
 
     hamming_secret_pairs = itertools.product(h_range, range(params.num_secret_seeds))
     # Since we dump the secrets down a directory.
-    save_and_log(f"{params.secret_dir}/secret.npy", secret)
+    if not os.path.isfile(secret_path):
+        save_and_log(f"{params.secret_dir}/secret.npy", secret)
     for h, seed_i in tqdm(list(hamming_secret_pairs)):
         secret_i = (h - params.min_hamming) * params.num_secret_seeds + seed_i
         np.save(f"{params.secret_dir}/secret_{h}_{seed_i}.npy", secret[..., secret_i])
@@ -590,7 +596,7 @@ if __name__ == "__main__":
     params = get_params()
     if params.seed < 0:
         params.seed = int(time.time())
-    logger = initialize_exp(params)
+    logger = create_this_logger(params)
     rng = init_rng(params.seed, logger)
 
      # If you're running only_secrets, you only want secret.npy file. 
@@ -637,20 +643,9 @@ if __name__ == "__main__":
     if params.tag:
         dirname += f"_{params.tag}"
 
-    params.dump_path = os.path.join(
-        params.dump_path,
-        params.exp_name,
-        f"A_b_{params.N}_{params.logq}_omega{params.omega}",
-    )
-
-    if params.rlwe == 1:
-        params.dump_path += "_rlwe"
-    elif params.rlwe > 1:
-        params.dump_path += "_mlwe"
-
     params.secret_dir = os.path.join(
-        params.dump_path,
-        f"{params.secret_type}_{params.min_hamming}_{params.max_hamming}",
+        params.processed_dump_path,
+        f"{params.secret_type}_secrets_h{params.min_hamming}_{params.max_hamming}",
     )
     if "secrets" in params.actions:
         os.makedirs(params.secret_dir, exist_ok=True)
