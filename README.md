@@ -24,6 +24,7 @@ conda activate lattice_env
 For all attacks, we have provided the LWE secrets used in the benchmark results of our paper: see data/benchmark_paper_data/{setting}/{secret type}_secrets_h{min}_{max}/secret.npy. We highly recommend using these secrets to test new attacks on these same settings, since this ensures comparable results. In the sections below, we provide instructions on which flags to use in the attack scripts if you want to run them on these provided secrets (rather than generating new ones on the fly). 
 
 For the SALSA and CC attacks, the preprocessing step is time and resource-intensive. Hence, we have provided original LWE samples and preprocessed datasets for each of the 6 benchmark settings proposed in our paper. Each has been compressed. They are available at the following links:
+- (Toy) $n=80$, $log_2 q = 7$: (140MB compressed --> 1 GB uncompressed): https://https://dl.fbaipublicfiles.com/lwe-benchmarking/80_7_omega15_lwe_data_prefix.tar.gz
 - (Kyber) $n=256, k=2,log_2 q = 12$: 
 - (Kyber) $n=256, k=2,log_2 q = 28$: 
 - (Kyber) $n=256, k=3, log_2 q = 35$: 
