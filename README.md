@@ -52,61 +52,82 @@ For the SALSA and CC attacks, the preprocessing step is time and resource-intens
 - (HE) $n=1024, log_2 q = 50$ (18GB compressed --> 46GB uncompressed): https://dl.fbaipublicfiles.com/1024_50_omega10_rlwe_data_prefix.tar.gz
 
 When downloading these, make sure you place them in a place with enough storage. Then, run the following command to restore them to original format. If you want our attack pipeline to flow smoothly, you should either unzip these files directly in ./data/benchmark_paper_data/{appropriate folder} or symlink them to that directory. 
-`tar -xvf /path/to/data_prefix.tar.gz -C /path/to/store/preprocessed/data`
+```
+tar -xvf /path/to/data_prefix.tar.gz -C /path/to/store/preprocessed/data
+```
 
 To create the full set of reduced LWE (A,b) pairs using the provided secrets and preprocessed data, run the following command (params below are for the toy dataset):
+
 `python3 src/generate/generate_A_b.py --processed_dump_path /path/to/unzipped/preprocessed/data/ --dump_path /path/to/store/Ab/data/ --N 80 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --rlwe 1 --actions secrets`
 
 ### Running the SALSA Attack
 
-## Data Generation
+#### Data Generation
 If you want to preprocess and generate your own data for the SALSA attack, run the following two commands first. If you already generated reduced LWE (A,b) pairs using our provided secrets and preprocessed data, skip this step.
-`python3 src/generate/preprocess.py --N 80 --Q 113 --dump_path /path/to/store/data/ --exp_name R_A_80_7_omega10_debug --num_workers 5 --reload_data ./data/benchmark_paper_data/n80_logq7/origA_n80_logq7.npy --thresholds "0.783,0.783001,0.7831" --lll_penalty 10` (Note: this will take a long time, we recommend using our provided datasets if you aren't looking to innovate preprocessing)
+
+`python3 src/generate/preprocess.py --N 80 --Q 113 --dump_path /path/to/store/data/ --exp_name R_A_80_7_omega10_debug --num_workers 5 --reload_data ./data/benchmark_paper_data/n80_logq7/origA_n80_logq7.npy --thresholds "0.783,0.783001,0.7831" --lll_penalty 10` 
+
+(Note: this will take a long time, we recommend using our provided datasets if you aren't looking to innovate preprocessing)
+
 
 `python3 src/generate/generate_A_b.py--processed_dump_path /path/used/to/store/preprocessed/data/ --dump_path ./data/benchmark_paper_data/n80_logq7/ --N 80 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --rlwe 1 --actions secrets`
 
 If you want to get some statistics on your generated data, then run:
+
 `python3 src/generate/generate_A_b.py--processed_dump_path /path/used/to/store/preprocessed/data/ --dump_path ./data/benchmark_paper_data/n80_logq7/ --N 80 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --rlwe 1 --actions describe`
 
-## SALSA Attack
+#### SALSA Attack
 ```train_and_recover.py``` runs the transformer-based secret recovery attack with an encoder-only model by default. Below is an example command:
+
 `python3 src/salsa/train_and_recover.py --data_path ./data/benchmark_paper_data/n80_logq7/binary_secrets_h5_6/ --exp_name salsa_demo --secret_seed 0 --rlwe 1 --task mlwe-i --angular_emb true --dxdistinguisher true --hamming 5 --cruel_bits 54 --train_batch_size 64 --val_batch_size 128 --n_enc_heads 8 --n_enc_layers 4 --enc_emb_dim 256 --base 1 --bucket_size 1 --dump_path /path/to/save/checkpoints/logs`
 
 ### Running the Cruel and Cool Attack
 
-## Data Generation (same as SALSA Data Generation)
+#### Data Generation (same as SALSA Data Generation)
 If you want to preprocess and generate your own data for this attack, run the following two commands first. If you already generated reduced LWE (A,b) pairs using our provided secrets and preprocessed data, skip this step.
 
 Example run commands (`preprocess` and `generate_secrets` are exactly the same as prior section):
 
-`python3 src/generate/preprocess.py --N 80 --Q 113 --dump_path /path/to/store/data --exp_name R_A_80_7_omega10_debug --num_workers 5 --reload_data ./data/benchmark_paper_data/n80_logq7/origA_n80_logq7.npy --thresholds "0.783,0.783001,0.7831" --lll_penalty 10` (Note: this will take a long time, we recommend using our provided datasets if you aren't looking to innovate preprocessing)
+`python3 src/generate/preprocess.py --N 80 --Q 113 --dump_path /path/to/store/data --exp_name R_A_80_7_omega10_debug --num_workers 5 --reload_data ./data/benchmark_paper_data/n80_logq7/origA_n80_logq7.npy --thresholds "0.783,0.783001,0.7831" --lll_penalty 10` 
+
+(Note: this will take a long time, we recommend using our provided datasets if you aren't looking to innovate preprocessing)
 
 `python3 src/generate/generate_A_b.py--processed_dump_path /path/used/to/store/preprocessed/data/ --dump_path ./data/benchmark_paper_data/n80_logq7/ --N 80 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --rlwe 1 --actions secrets`
 
-## Cruel and Cool Attack
+#### Cruel and Cool Attack
 To figure out how many cruel bits are in your preprocessed data, run:
+
 `python3 src/generate/generate_A_b.py--processed_dump_path /path/used/to/store/preprocessed/data/ --dump_path ./data/benchmark_paper_data/n80_logq7/ --N 80 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --rlwe 1 --actions describe`
 
 Then, run the attack (make sure bf_dim (# cruel bits) matches result from above):
+
 `python3 src/cruel_cool/main.py --path ./data/benchmark_paper_data/n80_logq7/binary_secrets_h5_6/ --exp_name cc_demo --greedy_max_data 100000 --keep_n_tops 1 --batch_size 10000 --compile_bf 0 --mlwe_k 1 --secret_window -1  --full_hw 5 --secret_type binary --bf_dim 54 --min_bf_hw 1 --max_bf_hw 5 --seed 0 --dump_path /path/to/save/checkpoints/logs`
 
 ### Running the USVP Attack
 First, generate a secret to use in the test attack via the command:
+
 `python3 src/generate/generate_A_b.py --N 32 --secret_type binary --min_hamming 5 --max_hamming 10 --dump_path ./data/ --processed_dump_path ./data/ --actions only_secrets`
 
 Then, run the attack with the corresponding parameters.
+
 `python3 src/usvp/usvp.py --N 32 --Q 967 --algo BKZ2.0 --secret_path ./data/secret_N32_binary_5_10/ --hamming 6 --secret_type binary`
 
 ### Running the MITM Attack
-Make sure you have created and activated the sage conda environment for this attack: `conda activate mitm_env`
+Make sure you have created and activated the sage conda environment for this attack: 
+
+`conda activate mitm_env`
 
 First, generate a secret to use in the test attack via the command:
+
 `python3 src/generate/generate_A_b.py --N 32 --secret_type binary --min_hamming 5 --max_hamming 10 --dump_path ./data/ --processed_dump_path ./data/ --actions only_secrets`
 
 Then, run the attack with the corresponding parameters using the following two commands:
+
 ```python3 src/dual_hybrid_mitm/dual_hybrid_mitm.py --dump_path ./ --exp_name test_mitm --k 16 --N 32 --Q 11197 --hamming 6 --exp_id mitm_binomial_test --num_workers 10 --step reduce --tau 30 --secret_seed 2 --secret_path ./data/secret_N32_binary_5_10/```
 
-```python3 src/dual_hybrid_mitm/dual_hybrid_mitm.py --step mitm --secret_seed 2 --bound 100 --secret_path ./data/secret_N32_binary_5_10/ --hamming 6 --short_vectors_path ./test_mitm/mitm_binomial_test/ --secret_type binary``` (change short vectors path if you modified dump path, exp_name, or exp_id in the first command)
+```python3 src/dual_hybrid_mitm/dual_hybrid_mitm.py --step mitm --secret_seed 2 --bound 100 --secret_path ./data/secret_N32_binary_5_10/ --hamming 6 --short_vectors_path ./test_mitm/mitm_binomial_test/ --secret_type binary``` 
+
+(change short vectors path if you modified dump path, exp_name, or exp_id in the first command)
 
 Whole experiment should take about 2 minutes. 
 
