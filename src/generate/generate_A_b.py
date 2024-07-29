@@ -547,24 +547,27 @@ def describe(reduced_A, orig_A):
     )
 
     # BKZ block sizes
-    logger.info(
-        "BKZ block sizes: %d, %d", params.bkz_block_size1, params.bkz_block_size2
-    )
+    # logger.info(
+    #     "BKZ block sizes: %d, %d", params.bkz_block_size1, params.bkz_block_size2
+    # )
 
     # Std dev of (RA @ s - RB) % Q
     # Do this for 10 secrets. Report all of the values, the mean and the std.
     diff_stds = []
-    diff_files = [file for file in os.listdir(params.secret_dir) if "diff" in file]
-    for diff_file in shuffled(diff_files, rng)[:50]:
-        diff = np.load(os.path.join(params.secret_dir, diff_file))
-        diff_stds.append((diff % params.Q).std() / params.Q)
+    try:
+        diff_files = [file for file in os.listdir(params.secret_dir) if "diff" in file]
+        for diff_file in shuffled(diff_files, rng)[:50]:
+            diff = np.load(os.path.join(params.secret_dir, diff_file))
+            diff_stds.append((diff % params.Q).std() / params.Q)
 
-    if diff_stds:
-        logger.info(
-            "Std deviation of (RA*s - Rb mod Q) / Q: %.3f (%.3f)",
-            np.mean(diff_stds),
-            np.std(diff_stds),
-        )
+        if diff_stds:
+            logger.info(
+                "Std deviation of (RA*s - Rb mod Q) / Q: %.3f (%.3f)",
+                np.mean(diff_stds),
+                np.std(diff_stds),
+            )
+    except Exception as e:
+        logger.warning("Error calculating diff std: %s", e)
 
 
 def get_loaded_params():

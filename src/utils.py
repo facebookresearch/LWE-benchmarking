@@ -22,7 +22,6 @@ import subprocess
 import numpy as np
 import errno
 import signal
-import torch
 from functools import wraps, partial
 
 from tqdm import tqdm
@@ -231,6 +230,7 @@ def mod_mult(mat1, mat2, Q):
 
 
 def mod_mult_torch(mat1, mat2, Q):
+    import torch
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     mat1 = torch.from_numpy(mat1).double().to(device)
     mat2 = torch.from_numpy(mat2).double().to(device)
@@ -247,6 +247,7 @@ def mod_mult_torch(mat1, mat2, Q):
 
 
 def mod_diff(base_pred, mod_pred, Q):
+    import torch
     assert base_pred.shape == mod_pred.shape
     diff = torch.abs(base_pred - mod_pred)
     diff = torch.minimum(diff, Q - diff)

@@ -1,4 +1,4 @@
-name: lattice_env
+name: lattice_env_test
 
 channels:
   - conda-forge

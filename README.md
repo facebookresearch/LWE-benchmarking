@@ -7,29 +7,47 @@
 * Python version >= 3.10.12
 
 ## Installation and Setup
-Clone this repository to your machine that has at least one GPU.
+Clone this repository to your machine that has at least one GPU. 
 
 Install flatter by following the instructions on [Flatter Github](https://github.com/keeganryan/flatter). Make sure it is symlinked correctly so it runs on your machine when you type the command "flatter". 
 
+Unfortunately, due to issues with environment compatabilities, you will need 2 different conda environments to use this repo: one without sage (for SALSA, CC, and uSVP attacks) and one with sage (for the MiTM attack)
+
+### For non-sage conda environment
 Install a conda environment with the command:
 ```
 conda env create -f environment/environment.yml
 conda activate lattice_env
 ```
 
+### For sage conda environment:
+First, make sure you are using the conda-forge channel and set it as top priority:
+```
+conda config --add channels conda-forge
+conda config --set channel_priority strict
+```
+Initialize a conda environment with the command: 
+```
+conda create -n mitm_env sage python=3.9
+```
+Then, pip install the following packages:
+```
+pip install tqdm joblib
+```
+
 ## Quickstart
 
-### (TODO UPDATE) Using provided data for SALSA and CC attacks 
+### Using provided data for SALSA and CC attacks 
 
-For all attacks, we have provided the LWE secrets used in the benchmark results of our paper: see data/benchmark_paper_data/{setting}/{secret type}_secrets_h{min}_{max}/secret.npy. We highly recommend using these secrets to test new attacks on these same settings, since this ensures comparable results. In the sections below, we provide instructions on which flags to use in the attack scripts if you want to run them on these provided secrets (rather than generating new ones on the fly). 
+For all attacks, we have provided the LWE secrets used in the benchmark results of our paper: see data/benchmark_paper_data/{setting}/{secret type}_secrets_h{min}_{max}/secret.npy. We recommend using these secrets to test new attacks on these same settings, since this ensures comparable results. In the sections below, we provide instructions on which flags to use in the attack scripts if you want to run them on these provided secrets (rather than generating new ones on the fly). 
 
-For the SALSA and CC attacks, the preprocessing step is time and resource-intensive. Hence, we have provided original LWE samples and preprocessed datasets for each of the 6 benchmark settings proposed in our paper. Each has been compressed. They are available at the following links:
-- (Toy) $n=80$, $log_2 q = 7$: (140MB compressed --> 1 GB uncompressed): https://dl.fbaipublicfiles.com/lwe-benchmarking/80_7_omega15_lwe_data_prefix.tar.gz
-- (Kyber) $n=256, k=2,log_2 q = 12$: 
-- (Kyber) $n=256, k=2,log_2 q = 28$: 
-- (Kyber) $n=256, k=3, log_2 q = 35$: 
+For the SALSA and CC attacks, the preprocessing step is time and resource-intensive. Hence, we have provided original LWE samples and preprocessed datasets for each of the 6 benchmark settings proposed in our paper and one toy setting. Each has been compressed. They are available at the following links:
+- (Toy) $n=80$, $log_2 q = 7$: (140MB compressed --> 1GB uncompressed): https://dl.fbaipublicfiles.com/lwe-benchmarking/80_7_omega15_lwe_data_prefix.tar.gz
+- (Kyber) $n=256, k=2,log_2 q = 12$ (625MB compressed --> 5.4GB uncompressed): https://dl.fbaipublicfiles.com/lwe-benchmarking/256_k2_12_omega4_mlwe_data_prefix.tar.gz
+- (Kyber) $n=256, k=2,log_2 q = 28$ (5.1GB compressed --> 14GB uncompressed): https://dl.fbaipublicfiles.com/lwe-benchmarking/256_k2_28_omega4_mlwe_data_prefix.tar.gz
+- (Kyber) $n=256, k=3, log_2 q = 35$ (12GB compressed --> 34GB uncompressed): https://dl.fbaipublicfiles.com/lwe-benchmarking/256_k3_35_omega4_mlwe_data_prefix.tar.gz
 - (HE) $n=1024, log_2 q = 26$ (5GB compressed --> 21GB uncompressed): https://dl.fbaipublicfiles.com/1024_26_omega10_rlwe_data_prefix.tar.gz
-- (HE) $n=1024, log_2 q = 29$ (6 GB compressed --> 24 GB uncompressed): https://dl.fbaipublicfiles.com/1024_29_omega10_rlwe_data_prefix.tar.gz
+- (HE) $n=1024, log_2 q = 29$ (6 GB compressed --> 24GB uncompressed): https://dl.fbaipublicfiles.com/1024_29_omega10_rlwe_data_prefix.tar.gz
 - (HE) $n=1024, log_2 q = 50$ (18GB compressed --> 46GB uncompressed): https://dl.fbaipublicfiles.com/1024_50_omega10_rlwe_data_prefix.tar.gz
 
 When downloading these, make sure you place them in a place with enough storage. You can then tar -xvf and gunzip them to restore them to original format. If you want our attack pipeline to flow smoothly, you should either place these files directly in ./data/benchmark_paper_data/{appropriate folder} or symlink them to that directory. 
@@ -42,13 +60,16 @@ Run the following scripts:
 * ```generate_secrets.py```: Generates (RA, Rb) pairs and associated secrets.
 * ```train_and_recover.py```: Runs the transformer-based secret recovery attack (encoder-only model by default)
   
-Example run commands:
+Example run commands (using provided data as described in prior section):
 
-`python3 preprocess.py --N 256 --Q 3329 --dump_path /checkpoint/ewenger/data/debug --exp_name R_A_256_12_omega10_debug --num_workers 5 --reload_data /checkpoint/ewenger/dumped/orig_A/n256_logq12/tiny_A.npy --thresholds "0.72,0.725,0.9" --lll_penalty 10`
+`python3 src/generate/preprocess.py --N 80 --Q 113 --dump_path /path/to/store/data --exp_name R_A_80_7_omega10_debug --num_workers 5 --reload_data ./data/benchmark_paper_data/n80_logq7/origA_n80_logq7.npy --thresholds "0.783,0.783001,0.7831" --lll_penalty 10` (Note: this will take a long time, we recommend using our provided datasets if you aren't looking to innovate preprocessing)
 
-`python3 generate_secrets.py --processed_dump_path /checkpoint/ewenger/data/debug/R_A_256_12_omega10_debug/ --exp_name demo --dump_path /checkpoint/ewenger/data/ --secret_type binary --num_secret_seeds 10 --min_hamming 4 --max_hamming 20 --max_samples 1000000`
+`python3 src/generate/generate_A_b.py--processed_dump_path /path/used/to/store/preprocessed/data --exp_name demo --dump_path ./data/benchmark_paper_data/n80_logq7/first_test/ --secret_type binary --num_secret_seeds 10 --min_hamming 4 --max_hamming 10 --max_samples 2000000  --rlwe 1 --actions secrets`
 
-`python src/salsa/train_and_recover.py --data_path /checkpoint/eshika/data/sp_paper/training_data/A_b_1024_26_omega10_rlwe/ternary_8_9/ --secret_seed 0 --rlwe 1 --task mlwe-i --angular_emb true --dxdistinguisher true --hamming 8 --cruel_bits 750 --train_batch_size 64 --val_batch_size 128 --n_enc_heads 8 --n_enc_layers 4 --enc_emb_dim 512 --base 25325715601611 --bucket_size 5065143120`
+If you want to get some statistics on your preprocessed data, then run:
+`python src/generate/generate_A_b.py --processed_dump_path /path/used/to/store/preprocessed/data --exp_name test --dump_path ./data/benchmark_paper_data/n80_logq7/first_test/ --actions describe`
+
+`python src/salsa/train_and_recover.py --data_path ./data/benchmark_paper_data/n80_logq7/first_test/binary_4_10/ --secret_seed 0 --rlwe 1 --task lwe --angular_emb true --dxdistinguisher true --hamming 4 --cruel_bits 54 --train_batch_size 64 --val_batch_size 128 --n_enc_heads 8 --n_enc_layers 4 --enc_emb_dim 256 --base 1 --bucket_size 1`
 
 ### Running the Cruel and Cool Attack
 To run everything, you need
@@ -63,34 +84,38 @@ Run the following scripts:
 * ```generate_secrets.py```: Generates (RA, Rb) pairs and associated secrets.
 * ```cruel_cool/main.py```: Runs the Cruel and Cool attack.
   
-Example run commands:
+Example run commands (`preprocess` and `generate_secrets` are exactly the same as prior section):
 
-`python3 preprocess.py --N 256 --Q 3329 --dump_path /checkpoint/ewenger/data/debug --exp_name R_A_256_12_omega10_debug --num_workers 5 --reload_data /checkpoint/ewenger/dumped/orig_A/n256_logq12/tiny_A.npy --thresholds "0.72,0.725,0.9" --lll_penalty 10`
+`python3 src/generate/preprocess.py --N 80 --Q 113 --dump_path /path/to/store/data --exp_name R_A_80_7_omega10_debug --num_workers 5 --reload_data ./data/benchmark_paper_data/n80_logq7/origA_n80_logq7.npy --thresholds "0.783,0.783001,0.7831" --lll_penalty 10` (Note: this will take a long time, we recommend using our provided datasets if you aren't looking to innovate preprocessing)
 
-`python3 generate_secrets.py --processed_dump_path /checkpoint/ewenger/data/debug/R_A_256_12_omega10_debug/ --exp_name demo --dump_path /checkpoint/ewenger/data/ --secret_type binary --num_secret_seeds 10 --min_hamming 4 --max_hamming 20 --max_samples 1000000`
+`python3 src/generate/generate_A_b.py--processed_dump_path /path/used/to/store/preprocessed/data --exp_name demo --dump_path ./data/benchmark_paper_data/n80_logq7/first_test/ --secret_type binary --num_secret_seeds 10 --min_hamming 4 --max_hamming 10 --max_samples 2000000  --rlwe 1 --actions secrets`
 
-`python3 src/cruel_cool/main.py --path /checkpoint/eshika/data/sp_paper/training_data/A_b_1024_26_omega10_rlwe/ternary_8_9/ --exp_name demo --greedy_max_data 100000 --keep_n_tops 1 --batch_size 10000 --compile_bf 0 --mlwe_k 1 --secret_window -1  --full_hw 9 --secret_type ternary --bf_dim 750 --min_bf_hw 1 --max_bf_hw 5 --seed 0`
+To figure out how many cruel bits are in your preprocessed data, run:
+`python src/generate/generate_A_b.py --processed_dump_path /path/used/to/store/preprocessed/data --exp_name test --dump_path ./data/benchmark_paper_data/n80_logq7/first_test/ --actions describe`
+
+Then, run the attack (make sure # cruel bits matches result from above):
+`python3 src/cruel_cool/main.py --path ./data/benchmark_paper_data/n80_logq7/first_test/binary_4_10/ --exp_name demo --greedy_max_data 100000 --keep_n_tops 1 --batch_size 10000 --compile_bf 0 --mlwe_k 1 --secret_window -1  --full_hw  --secret_type binary --bf_dim 54 --min_bf_hw 1 --max_bf_hw 5 --seed 0`
 
 ### Running the USVP Attack
 First, generate a secret to use in the test attack via the command:
-`python3 src/generate/generate_secrets.py --N 32 --secret_type binary --min_hamming 5 --max_hamming 10 --dump_path ./data --processed_dump_path ./ --actions only_secrets`
+`python3 src/generate/generate_A_b.py --N 32 --secret_type binary --min_hamming 5 --max_hamming 10 --dump_path ./data/ --processed_dump_path ./data/ --actions only_secrets`
 
 Run the following script:
 * `usvp/usvp.py`: Runs the USVP attack on a randomly generated LWE matrix
   
 Example run commands:
 
-`python3 src/usvp/usvp.py --N 32 --Q 967 --algo BKZ2.0 --secret_path ./data/secrets/secret_N32_binary_5_10/ --hamming 6 --secret_type binary`
+`python3 src/usvp/usvp.py --N 32 --Q 967 --algo BKZ2.0 --secret_path ./data/secret_N32_binary_5_10/ --hamming 6 --secret_type binary`
 
 ### Running the MITM Attack
 Generate a secret, as described in the uSVP section above.
 
 Example commands:
 Then run
-```python3 src/dual_hybrid_mitm/dual_hybrid_mitm.py --dump_path ./ --exp_name test_mitm --k 16 --N 32 --Q 11197 --hamming 6 --exp_id mitm_binomial_test --num_workers 10 --step reduce --tau 30 --secret_seed 2 --secret_path ./data/secrets/secret_N32_binary_5_10/```
+```python3 src/dual_hybrid_mitm/dual_hybrid_mitm.py --dump_path ./ --exp_name test_mitm --k 16 --N 32 --Q 11197 --hamming 6 --exp_id mitm_binomial_test --num_workers 10 --step reduce --tau 30 --secret_seed 2 --secret_path ./data/secret_N32_binary_5_10/```
 
 Then run 
-```python3 src/dual_hybrid_mitm/dual_hybrid_mitm.py --step mitm --secret_seed 2 --bound 100 --secret_path ./data/secrets/secret_N32_binary_5_10/ --hamming 6 --short_vectors_path ./test_mitm/mitm_binomial_test/ --secret_type binary``` (change short vectors path if you modified dump path, exp_name, or exp_id in the first command)
+```python3 src/dual_hybrid_mitm/dual_hybrid_mitm.py --step mitm --secret_seed 2 --bound 100 --secret_path ./data/secret_N32_binary_5_10/ --hamming 6 --short_vectors_path ./test_mitm/mitm_binomial_test/ --secret_type binary``` (change short vectors path if you modified dump path, exp_name, or exp_id in the first command)
 
 Whole experiment should take about 2 minutes. 
 
