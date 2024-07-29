@@ -1,0 +1,10 @@
+{
+    "dump_path": ["/path/to/dump/logs/"],
+    "secret_path": ["/path/to/Ab/data/"],
+    "N": [32],
+    "Q": [967],
+    "hamming": [6],
+    "secret_type": ["binary"],
+    "algo": ["flatter"],
+    "algo2": ["flatter"]
+}

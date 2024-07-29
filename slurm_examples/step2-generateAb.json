@@ -1,6 +1,6 @@
 {
-    "dump_path": ["/checkpoint/eshika/data/"],
-    "processed_dump_path": ["/checkpoint/ewenger/data/post_eurocrypt/R_A_1024_26_omega10_sp/"],
+    "dump_path": ["/path/for/dumping/data/"],
+    "processed_dump_path": ["/path/to/preprocessed/data/"],
     "secret_type": ["ternary"], 
     "min_hamming": [8],
     "max_hamming": [9],

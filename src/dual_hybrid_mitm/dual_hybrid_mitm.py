@@ -60,7 +60,7 @@ def get_parser():
     parser.add_argument("--short_vectors_path", type=str, default="",
                         help="Path to data.prefix file saved off ")
     parser.add_argument("--secret_path", type=str, default="",
-                        help="Directory to load the secrets file. Secrets have format secret.npy, created by running generate_secrets.py")
+                        help="Directory to load the secrets file. Secrets have format secret.npy, created by running generate_A_b.py")
     parser.add_argument("--secret_seed", type=int, default=0, help="which index of secret to load.")
     
     # CPU

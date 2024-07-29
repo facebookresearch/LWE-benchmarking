@@ -1,0 +1,19 @@
+{
+    "dump_path": ["/path/to/dump/logs/"],
+    "short_vectors_path": ["/path/to/short/vectors/"],
+    "secret_path": ["/path/to/Ab/data/"],
+
+    "step": ["mitm"],
+
+    "k": [16],
+    "tau": [30],
+    "bound": [100],
+    "secret_seed": [0,1,2,3,4,5,6,7,8,9],
+    "N": [32],
+    "Q": [11197],
+    "hamming": [6],
+    "secret_type": ["binary"],
+    "mlwe_k": [1],
+    "algo": ["flatter"],
+    "algo2": ["flatter"]
+}

@@ -129,9 +129,7 @@ def print_RA_stats(all_dirs, max_samples=20000):
 
 
 dirs = [
-    "/checkpoint/ewenger/data/post_eurocrypt/R_A_1024_26_omega10_sp/25558037/",
-    "/checkpoint/ewenger/data/post_eurocrypt/R_A_1024_29_omega10_sp/26350035/",
-    "/checkpoint/ewenger/data/post_eurocrypt/R_A_1024_50_omega10/",
+    "/path/to/data.prefix/"
 ]
 
 df = print_RA_stats(dirs, max_samples=3000)

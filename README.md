@@ -86,7 +86,7 @@ If you want to get some statistics on your generated data, then run:
 #### Data Generation (same as SALSA Data Generation)
 If you want to preprocess and generate your own data for this attack, run the following two commands first. If you already generated reduced LWE (A,b) pairs using our provided secrets and preprocessed data, skip this step.
 
-Example run commands (`preprocess` and `generate_secrets` are exactly the same as prior section):
+Example run commands (`preprocess` and `generate_A_b` are exactly the same as prior section):
 
 `python3 src/generate/preprocess.py --N 80 --Q 113 --dump_path /path/to/store/data --exp_name R_A_80_7_omega10_debug --num_workers 5 --reload_data ./data/benchmark_paper_data/n80_logq7/origA_n80_logq7.npy --thresholds "0.783,0.783001,0.7831" --lll_penalty 10` 
 

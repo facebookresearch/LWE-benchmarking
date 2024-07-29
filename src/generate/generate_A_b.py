@@ -17,7 +17,7 @@ The main arguments:
     * plot: plot reduction levels for RA and save to the output directory.
     * describe: calculate a lot of statistics about the generated data.
 
-python generate_secrets.py --processed_dump_path /path/to/preprocessed/data/ --exp_name debug --dump_path /path/to/dump/data --secret_type binary --num_secret_seeds 10 --min_hamming 1 --max_hamming 20 --actions secrets plot describe
+python generate_A_b.py --processed_dump_path /path/to/preprocessed/data/ --exp_name debug --dump_path /path/to/dump/data --secret_type binary --num_secret_seeds 10 --min_hamming 1 --max_hamming 20 --actions secrets plot describe
 
 This will make some binary secrets with hamming weights from 1 to 20 and describe the outputs.
 

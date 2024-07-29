@@ -64,7 +64,7 @@ def get_parser():
         "--secret_path",
         type=str,
         default="",
-        help="Directory to load the secrets file. Secrets have format secret.npy, created by running generate_secrets.py",
+        help="Directory to load the secrets file. Secrets have format secret.npy, created by running generate_A_b.py",
     )
     # CPU
     parser.add_argument(
