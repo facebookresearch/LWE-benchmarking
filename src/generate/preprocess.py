@@ -7,7 +7,10 @@ LICENSE file in the root directory of this source tree.
 """
 
 import argparse
+import sys
 import numpy as np
+
+sys.path.append(".")
 
 from src import utils
 from src.slurm import init_signal_handler, init_distributed_mode
