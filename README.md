@@ -70,11 +70,11 @@ If you want to preprocess and generate your own data for the SALSA attack, run t
 (Note: you will want to let this run for a while, until you have at least ~2 million samples in the data*.prefix files for SALSA attack, and at least 500K for the CC attack)
 (Note: this will take a long time for n > 80, we recommend using our provided datasets if you aren't looking to innovate preprocessing)
 
-`python3 src/generate/generate_A_b.py --processed_dump_path /path/used/to/store/preprocessed/data/ --dump_path /path/used/to/store/preprocessed/data/ --N 80 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --rlwe 1 --actions secrets`
+`python3 src/generate/generate_A_b.py --processed_dump_path /path/used/to/store/preprocessed/data/ --secret_path ./n80_logq7/binary_secrets_h5_6/secret.npy --dump_path /path/to/store/Ab/data/ --N 80 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --rlwe 1 --actions secrets`
 
 If you want to get some statistics on your generated data, then run:
 
-`python3 src/generate/generate_A_b.py --processed_dump_path /path/used/to/store/preprocessed/data/ --dump_path ./data/benchmark_paper_data/n80_logq7/ --N 80 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --rlwe 1 --actions describe`
+`python3 src/generate/generate_A_b.py --processed_dump_path /path/used/to/store/preprocessed/data/ --dump_path /path/to/Ab/data/ --N 80 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --rlwe 1 --actions describe`
 
 #### SALSA Attack
 ```train_and_recover.py``` runs the transformer-based secret recovery attack with an encoder-only model by default. Below is an example command:
@@ -94,12 +94,12 @@ Example run commands (`preprocess` and `generate_A_b` are exactly the same as pr
 
 (Note: this will take a long time, we recommend using our provided datasets if you aren't looking to innovate preprocessing)
 
-`python3 src/generate/generate_A_b.py --processed_dump_path /path/used/to/store/preprocessed/data/ --dump_path ./data/benchmark_paper_data/n80_logq7/ --N 80 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --rlwe 1 --actions secrets`
+`python3 src/generate/generate_A_b.py--processed_dump_path /path/used/to/store/preprocessed/data/ --secret_path ./n80_logq7/binary_secrets_h5_6/secret.npy --dump_path /path/to/store/Ab/data/ --N 80 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --rlwe 1 --actions secrets`
 
 #### Cruel and Cool Attack
 To figure out how many cruel bits are in your preprocessed data, run:
 
-`python3 src/generate/generate_A_b.py --processed_dump_path /path/used/to/store/preprocessed/data/ --dump_path ./data/benchmark_paper_data/n80_logq7/ --N 80 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --rlwe 1 --actions describe`
+`python3 src/generate/generate_A_b.py--processed_dump_path /path/used/to/store/preprocessed/data/ --dump_path /path/to/store/Ab/data/ --N 80 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --rlwe 1 --actions describe`
 
 Then, run the attack (make sure bf_dim (# cruel bits) matches result from above):
 
