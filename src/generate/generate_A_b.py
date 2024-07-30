@@ -10,6 +10,7 @@ Very simple script for generating secret datasets. It only supports LWE (no ring
 The main arguments:
 
 --processed_dump_path: the directory with data_*.prefix files, or the parent of that directory. See the NOTE in the comments.
+--secret_path: path to an existing secret.npy file. If not provided, the script will generate a new secret.
 --secret_type: binary, ternary, gaussian, binomial. Look at the SecretFactory classes.
 --actions: one or more of "secrets", "only_secrets", "plot", "describe"
     * secrets: given A data, generate new secrets using --min_hamming, --max_hamming, etc., and associated b data.
@@ -100,6 +101,7 @@ def get_params():
         required=True,
         help="Directory to load the preprocessed data from.",
     )
+    parser.add_argument("--secret_path", default="", help="Path to predefined secret.npy file.")
 
     # LWE
     parser.add_argument("--num_secret_seeds", type=int, default=10)
@@ -293,15 +295,14 @@ def generate(test_size=10000):
     else:
         raise ValueError(params.secret_type)
 
-    secret_path = os.path.join(params.secret_dir, "secret.npy")
-    if not os.path.isfile(secret_path):
+    if not os.path.isfile(params.secret_path):
         logger.info("Creating %s secret", secret_factory.type_)
         secret = secret_factory.new(
             params.N, params.min_hamming, params.max_hamming, params.num_secret_seeds
         )
     else: 
-        logger.info("Loading secret from %s", secret_path)
-        secret = np.load(secret_path)
+        logger.info("Loading secret from %s", params.secret_path)
+        secret = np.load(params.secret_path)
 
     h_range = range(params.min_hamming, params.max_hamming + 1)
     num_secrets = len(h_range) * params.num_secret_seeds
@@ -426,8 +427,7 @@ def generate(test_size=10000):
 
     hamming_secret_pairs = itertools.product(h_range, range(params.num_secret_seeds))
     # Since we dump the secrets down a directory.
-    if not os.path.isfile(secret_path):
-        save_and_log(f"{params.secret_dir}/secret.npy", secret)
+    save_and_log(f"{params.secret_dir}/secret.npy", secret)
     for h, seed_i in tqdm(list(hamming_secret_pairs)):
         secret_i = (h - params.min_hamming) * params.num_secret_seeds + seed_i
         np.save(f"{params.secret_dir}/secret_{h}_{seed_i}.npy", secret[..., secret_i])
@@ -599,6 +599,7 @@ if __name__ == "__main__":
     params = get_params()
     if params.seed < 0:
         params.seed = int(time.time())
+    os.makedirs(params.dump_path, exist_ok=True)
     logger = create_this_logger(params)
     rng = init_rng(params.seed, logger)
 
@@ -647,7 +648,7 @@ if __name__ == "__main__":
         dirname += f"_{params.tag}"
 
     params.secret_dir = os.path.join(
-        params.processed_dump_path,
+        params.dump_path,
         f"{params.secret_type}_secrets_h{params.min_hamming}_{params.max_hamming}",
     )
     if "secrets" in params.actions:
