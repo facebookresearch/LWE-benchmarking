@@ -67,19 +67,19 @@ If you want to preprocess and generate your own data for the SALSA attack, run t
 
 `python3 src/generate/preprocess.py --N 80 --Q 113 --dump_path /path/to/store/data/ --exp_name R_A_80_7_omega10_debug --num_workers 5 --reload_data ./data/benchmark_paper_data/n80_logq7/origA_n80_logq7.npy --thresholds "0.783,0.783001,0.7831" --lll_penalty 10` 
 
-(Note: this will take a long time, we recommend using our provided datasets if you aren't looking to innovate preprocessing)
+(Note: you will want to let this run for a while, until you have at least ~2 million samples in the data*.prefix files for SALSA attack, and at least 500K for the CC attack)
+(Note: this will take a long time for n > 80, we recommend using our provided datasets if you aren't looking to innovate preprocessing)
 
-
-`python3 src/generate/generate_A_b.py--processed_dump_path /path/used/to/store/preprocessed/data/ --dump_path ./data/benchmark_paper_data/n80_logq7/ --N 80 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --rlwe 1 --actions secrets`
+`python3 src/generate/generate_A_b.py --processed_dump_path /path/used/to/store/preprocessed/data/ --dump_path /path/used/to/store/preprocessed/data/ --N 80 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --rlwe 1 --actions secrets`
 
 If you want to get some statistics on your generated data, then run:
 
-`python3 src/generate/generate_A_b.py--processed_dump_path /path/used/to/store/preprocessed/data/ --dump_path ./data/benchmark_paper_data/n80_logq7/ --N 80 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --rlwe 1 --actions describe`
+`python3 src/generate/generate_A_b.py --processed_dump_path /path/used/to/store/preprocessed/data/ --dump_path ./data/benchmark_paper_data/n80_logq7/ --N 80 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --rlwe 1 --actions describe`
 
 #### SALSA Attack
 ```train_and_recover.py``` runs the transformer-based secret recovery attack with an encoder-only model by default. Below is an example command:
 
-`python3 src/salsa/train_and_recover.py --data_path ./data/benchmark_paper_data/n80_logq7/binary_secrets_h5_6/ --exp_name salsa_demo --secret_seed 0 --rlwe 1 --task mlwe-i --angular_emb true --dxdistinguisher true --hamming 5 --cruel_bits 54 --train_batch_size 64 --val_batch_size 128 --n_enc_heads 8 --n_enc_layers 4 --enc_emb_dim 256 --base 1 --bucket_size 1 --dump_path /path/to/save/checkpoints/logs`
+`python3 src/salsa/train_and_recover.py --data_path /path/used/to/store/preprocessed/data/binary_secrets_h5_6/ --exp_name salsa_demo --secret_seed 0 --rlwe 1 --task mlwe-i --angular_emb true --dxdistinguisher true --hamming 5 --cruel_bits 54 --train_batch_size 64 --val_batch_size 128 --n_enc_heads 8 --n_enc_layers 4 --enc_emb_dim 256 --base 1 --bucket_size 1 --dump_path /path/to/save/checkpoints/logs`
 
 ### Running the Cruel and Cool Attack
 
