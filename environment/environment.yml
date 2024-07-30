@@ -1,4 +1,4 @@
-name: lattice_env_test
+name: lattice_env
 
 channels:
   - conda-forge
@@ -8,6 +8,7 @@ channels:
 
 dependencies:
   - python=3.10
+  - conda-forge::numpy=1.26.*
   - fpylll
   - pytorch::pytorch
   - pytorch-cuda=11.8
@@ -18,7 +19,6 @@ dependencies:
     - estimator
     - joblib
     - matplotlib
-    - numpy
     - pandas
     - polars
     - scikit-learn
