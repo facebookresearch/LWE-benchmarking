@@ -177,7 +177,7 @@ class Generator(object):
             M = GSO.Mat(fplll_Ap, float_type=self.float_type, update=True)
             BKZ_Obj = BKZ2(M)
             BKZ_Obj(bkz_params)
-        Ap = np.zeros((self.m + self.d, self.m + self.d), dtype=np.int64)
+        Ap = np.zeros((Ap.shape[0], Ap.shape[1]), dtype=np.int64)
         fplll_Ap.to_matrix(Ap)
         if self.params.rand_rows:
             Ap = np.random.permutation(Ap)
