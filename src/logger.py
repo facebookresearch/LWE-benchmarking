@@ -41,7 +41,7 @@ def create_logger(filepath, rank):
         if rank > 0:
             filepath = "%s-%i" % (filepath, rank)
         file_handler = logging.FileHandler(filepath, "a")
-        file_handler.setLevel(logging.WARNING)
+        file_handler.setLevel(logging.INFO)
         file_handler.setFormatter(log_formatter)
 
     # create console handler and set level to info
@@ -52,7 +52,7 @@ def create_logger(filepath, rank):
     # create logger and set level to warning
     logger = logging.getLogger()
     logger.handlers = []
-    logger.setLevel(logging.WARNING)
+    logger.setLevel(logging.INFO)
     logger.propagate = False
     if filepath is not None:
         logger.addHandler(file_handler)

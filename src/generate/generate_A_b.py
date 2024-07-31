@@ -603,6 +603,21 @@ if __name__ == "__main__":
     logger = create_this_logger(params)
     rng = init_rng(params.seed, logger)
 
+    # If a secret path is provided, make sure params are updated accordingly. 
+    if os.path.isfile(params.secret_path):
+        # Infer characteristics from dirname (min_hamming, max_hamming, secret_type) 
+        dirname = os.path.dirname(params.secret_path).split("/")[-1]
+        try:
+            s = np.load(params.secret_path)
+            params.secret_type = dirname.split('_')[0]
+            params.min_hamming = int(dirname.split('_')[-2][1:])
+            params.max_hamming = int(dirname.split('_')[-1])
+            params.num_secret_seeds = s.shape[-1] // (params.max_hamming - params.min_hamming + 1)
+            print(params.min_hamming, params.max_hamming)
+        except Exception as e:
+            print(f"Failed with error {e}")
+            assert False == True, 'Could not infer secret characteristics from dirname'
+
      # If you're running only_secrets, you only want secret.npy file. 
     if "only_secrets" in params.actions: 
         # Just make the secret file and exit.
