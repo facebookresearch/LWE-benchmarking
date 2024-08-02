@@ -1,0 +1,20 @@
+{
+    "min_bf_hw": [1],
+    "max_bf_hw": [5],
+
+    "seed": [0,1,2,3,4,5,6,7,8,9],
+
+    "greedy_max_data": [100000],
+    "keep_n_tops": [1],
+    "batch_size": [10000],
+    "device": ["cuda"],
+    "compile_bf": [0],
+
+    "mlwe_k": [1],
+    "secret_window": [-1],
+
+    "path": ["/path/to/Ab/data/"],
+    "full_hw": [8, 9],
+    "secret_type": ["ternary"],
+    "bf_dim": [750]
+}

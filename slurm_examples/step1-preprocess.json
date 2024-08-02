@@ -1,0 +1,12 @@
+{
+    "N": [1024],
+    "Q": [41223389],
+    "lll_penalty": [10],
+    "float_type": ["qd"],
+    "lll_delta": [0.93],
+    "lll_delta2": [0.96],
+    "bkz_block_size": [18],
+    "bkz_block_size2": [22],
+    "thresholds": ["0.861,0.86101, 0.870"],
+    "num_workers": [8]
+}

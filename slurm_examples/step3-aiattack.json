@@ -1,0 +1,22 @@
+{
+    "dump_path": ["/path/for/dumping/logs/checkpoints/"],
+    "data_path": ["/path/to/Ab/data/"],
+
+    "seed": [-1],
+    "secret_seed": [0,1,2,3,4,5,6,7,8,9],
+    "rlwe": [1],
+    "task": ["mlwe-i"],
+    
+    "train_batch_size": [64],
+    "val_batch_size": [128],
+    "angular_emb": ["True"],
+    "dxdistinguisher": ["True"],
+    "n_enc_heads": [8],
+    "n_enc_layers": [4],
+    "enc_emb_dim": [512],
+    "base": [25325715601611],
+    "bucket_size": [5065143120],
+
+    "hamming": [8, 9],
+    "cruel_bits": [750]
+}
