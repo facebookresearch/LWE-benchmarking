@@ -1,3 +1,9 @@
+// Copyright (c) Meta Platforms, Inc. and affiliates.
+// All rights reserved.
+
+// This source code is licensed under the license found in the
+// LICENSE file in the root directory of this source tree.
+
 // @ts-check
 // `@type` JSDoc annotations allow editor autocompletion and type checking
 // (when paired with `@ts-check`).
@@ -16,7 +22,7 @@ const config = {
   url: 'https://facebookresearch.github.io/',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/',
+  baseUrl: '/LWE-benchmarking/',
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
@@ -73,6 +79,11 @@ const config = {
             to: 'about-us', label: 'About Us', position: 'left'
           },
           {
+            href: 'https://eprint.iacr.org/2024/1229',
+            label: 'Paper',
+            position: 'right',
+          },
+          {
             href: 'https://github.com/facebookresearch/LWE-benchmarking',
             label: 'GitHub',
             position: 'right',
@@ -108,8 +119,7 @@ const config = {
               },
               {
                 label: 'Paper',
-                // TODO: replace with paper link
-                href: 'https://github.com/facebookresearch/verde',
+                href: 'https://eprint.iacr.org/2024/1229',
               },
               {
                 label: 'About Us',

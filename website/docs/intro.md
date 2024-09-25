@@ -62,7 +62,7 @@ tar -xvf /path/to/data_prefix.tar.gz -C /path/to/store/preprocessed/data
 
 To create the full set of reduced LWE (A,b) pairs using the provided secrets and preprocessed data, run the following command (params below are for the toy dataset):
 
-`python3 src/generate/generate_A_b.py --processed_dump_path /path/to/unzipped/preprocessed/data/ --dump_path /path/to/store/Ab/data/ --N 80 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --rlwe 1 --actions secrets`
+`python3 src/generate/generate_A_b.py --processed_dump_path /path/used/to/store/preprocessed/data/ --secret_path ./n80_logq7/binary_secrets_h5_6/secret.npy --dump_path /path/to/store/Ab/data/ --N 80 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --rlwe 1 --actions secrets`
 
 ### Running the SALSA Attack
 
@@ -71,19 +71,24 @@ If you want to preprocess and generate your own data for the SALSA attack, run t
 
 `python3 src/generate/preprocess.py --N 80 --Q 113 --dump_path /path/to/store/data/ --exp_name R_A_80_7_omega10_debug --num_workers 5 --reload_data ./data/benchmark_paper_data/n80_logq7/origA_n80_logq7.npy --thresholds "0.783,0.783001,0.7831" --lll_penalty 10` 
 
-(Note: this will take a long time, we recommend using our provided datasets if you aren't looking to innovate preprocessing)
+(Note: you will want to let this run for a while, until you have at least ~2 million samples in the data*.prefix files for SALSA attack)
+(Note: this will take a long time for n > 80, we recommend using our provided datasets if you aren't looking to innovate preprocessing)
 
+If you want to generate your own secrets, run:
+`python3 src/generate/generate_A_b.py --processed_dump_path /path/used/to/store/preprocessed/data/ --dump_path ./testn80 --N 80 --rlwe 1 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --actions secrets` 
 
-`python3 src/generate/generate_A_b.py--processed_dump_path /path/used/to/store/preprocessed/data/ --dump_path ./data/benchmark_paper_data/n80_logq7/ --N 80 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --rlwe 1 --actions secrets`
+If you want to use the secrets we provide, run:
+`python3 src/generate/generate_A_b.py --processed_dump_path /path/used/to/store/preprocessed/data/ --secret_path ./data/benchmark_paper_data/n80_logq7/binary_secrets_h5_6/secret.npy --dump_path ./testn80 --N 80 --rlwe 1 --actions secrets`
 
 If you want to get some statistics on your generated data, then run:
-
-`python3 src/generate/generate_A_b.py--processed_dump_path /path/used/to/store/preprocessed/data/ --dump_path ./data/benchmark_paper_data/n80_logq7/ --N 80 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --rlwe 1 --actions describe`
+`python3 src/generate/generate_A_b.py --processed_dump_path /path/used/to/store/preprocessed/data/ --dump_path ./testn80 --N 80 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --rlwe 1 --actions describe`
 
 #### SALSA Attack
 ```train_and_recover.py``` runs the transformer-based secret recovery attack with an encoder-only model by default. Below is an example command:
 
-`python3 src/salsa/train_and_recover.py --data_path ./data/benchmark_paper_data/n80_logq7/binary_secrets_h5_6/ --exp_name salsa_demo --secret_seed 0 --rlwe 1 --task mlwe-i --angular_emb true --dxdistinguisher true --hamming 5 --cruel_bits 54 --train_batch_size 64 --val_batch_size 128 --n_enc_heads 8 --n_enc_layers 4 --enc_emb_dim 256 --base 1 --bucket_size 1 --dump_path /path/to/save/checkpoints/logs`
+`python3 src/salsa/train_and_recover.py --data_path ./testn80/binary_secrets_h5_6/ --exp_name salsa_demo --secret_seed 0 --rlwe 1 --task mlwe-i --angular_emb true --dxdistinguisher true --hamming 5 --cruel_bits 54 --train_batch_size 64 --val_batch_size 128 --n_enc_heads 8 --n_enc_layers 4 --enc_emb_dim 256 --base 1 --bucket_size 1 --dump_path ./testn80_salsa_logs --distinguisher_size 64`
+
+(If you get errors about the test set size, either preprocess more data or make the distinguisher size parameter smaller.)
 
 ### Running the Cruel and Cool Attack
 
@@ -92,20 +97,25 @@ If you want to preprocess and generate your own data for this attack, run the fo
 
 Example run commands (`preprocess` and `generate_A_b` are exactly the same as prior section):
 
-`python3 src/generate/preprocess.py --N 80 --Q 113 --dump_path /path/to/store/data --exp_name R_A_80_7_omega10_debug --num_workers 5 --reload_data ./data/benchmark_paper_data/n80_logq7/origA_n80_logq7.npy --thresholds "0.783,0.783001,0.7831" --lll_penalty 10` 
+`python3 src/generate/preprocess.py --N 80 --Q 113 --dump_path /path/to/store/data/ --exp_name R_A_80_7_omega10_debug --num_workers 5 --reload_data ./data/benchmark_paper_data/n80_logq7/origA_n80_logq7.npy --thresholds "0.783,0.783001,0.7831" --lll_penalty 10` 
 
-(Note: this will take a long time, we recommend using our provided datasets if you aren't looking to innovate preprocessing)
+(Note: you will want to let this run for a while, until you have at least ~500K samples in the data*.prefix files for CC attack)
+(Note: this will take a long time for n > 80, we recommend using our provided datasets if you aren't looking to innovate preprocessing)
 
-`python3 src/generate/generate_A_b.py--processed_dump_path /path/used/to/store/preprocessed/data/ --dump_path ./data/benchmark_paper_data/n80_logq7/ --N 80 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --rlwe 1 --actions secrets`
+If you want to generate your own secrets, run:
+`python3 src/generate/generate_A_b.py --processed_dump_path /path/used/to/store/preprocessed/data/ --dump_path ./testn80 --N 80 --rlwe 1 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --actions secrets` 
+
+If you want to use the secrets we provide, run:
+`python3 src/generate/generate_A_b.py --processed_dump_path /path/used/to/store/preprocessed/data/ --secret_path ./data/benchmark_paper_data/n80_logq7/binary_secrets_h5_6/secret.npy --dump_path ./testn80 --N 80 --rlwe 1 --actions secrets`
 
 #### Cruel and Cool Attack
 To figure out how many cruel bits are in your preprocessed data, run:
 
-`python3 src/generate/generate_A_b.py--processed_dump_path /path/used/to/store/preprocessed/data/ --dump_path ./data/benchmark_paper_data/n80_logq7/ --N 80 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --rlwe 1 --actions describe`
+`python3 src/generate/generate_A_b.py --processed_dump_path /path/used/to/store/preprocessed/data/ --dump_path ./testn80 --N 80 --min_hamming 5 --max_hamming 6 --secret_type binary --num_secret_seeds 10 --rlwe 1 --actions describe`
 
 Then, run the attack (make sure bf_dim (# cruel bits) matches result from above):
 
-`python3 src/cruel_cool/main.py --path ./data/benchmark_paper_data/n80_logq7/binary_secrets_h5_6/ --exp_name cc_demo --greedy_max_data 100000 --keep_n_tops 1 --batch_size 10000 --compile_bf 0 --mlwe_k 1 --secret_window -1  --full_hw 5 --secret_type binary --bf_dim 54 --min_bf_hw 1 --max_bf_hw 5 --seed 0 --dump_path /path/to/save/checkpoints/logs`
+`python3 src/cruel_cool/main.py --path ./testn80/binary_secrets_h5_6/ --exp_name cc_demo --greedy_max_data 100000 --keep_n_tops 1 --batch_size 10000 --compile_bf 0 --mlwe_k 1 --secret_window -1  --full_hw 5 --secret_type binary --bf_dim 54 --min_bf_hw 1 --max_bf_hw 5 --seed 0 --dump_path /path/to/save/checkpoints/logs`
 
 ### Running the USVP Attack
 First, generate a secret to use in the test attack via the command:
@@ -136,7 +146,18 @@ Then, run the attack with the corresponding parameters using the following two c
 Whole experiment should take about 2 minutes. 
 
 ## Citation
-TODO
+If you use this benchmark in your research, please use the following BibTeX entry.
+
+```
+@misc{cryptoeprint:2024/1229,
+      author = {Emily Wenger and Eshika Saxena and Mohamed Malhou and Ellie Thieu and Kristin Lauter},
+      title = {Benchmarking Attacks on Learning with Errors},
+      howpublished = {Cryptology ePrint Archive, Paper 2024/1229},
+      year = {2024},
+      note = {\url{https://eprint.iacr.org/2024/1229}},
+      url = {https://eprint.iacr.org/2024/1229}
+}
+```
 
 ## License
 This code is made available under CC-by-NC, however you may have other legal obligations that govern your use of other content, such as the terms of service for third-party models.

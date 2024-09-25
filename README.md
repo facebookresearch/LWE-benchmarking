@@ -1,4 +1,8 @@
-# README
+# Benchmarking Attacks on Learning with Errors (LWE)
+
+Measuring concrete attack performance against LWE-based cryptosystems
+
+[[`Paper`](https://eprint.iacr.org/2024/1229)] [[`Website`](https://facebookresearch.github.io/LWE-benchmarking/)] [[`BibTeX`](https://github.com/facebookresearch/LWE-benchmarking/edit/main/README.md#citation)]
  
 ## Requirements
 
@@ -306,7 +310,17 @@ Whole experiment should take about 2 minutes.
 </body>
 
 ## Citation
-TODO
+If you use this benchmark in your research, please use the following BibTeX entry.
+```
+@misc{cryptoeprint:2024/1229,
+      author = {Emily Wenger and Eshika Saxena and Mohamed Malhou and Ellie Thieu and Kristin Lauter},
+      title = {Benchmarking Attacks on Learning with Errors},
+      howpublished = {Cryptology ePrint Archive, Paper 2024/1229},
+      year = {2024},
+      note = {\url{https://eprint.iacr.org/2024/1229}},
+      url = {https://eprint.iacr.org/2024/1229}
+}
+```
 
 ## License
 This code is made available under CC-by-NC, however you may have other legal obligations that govern your use of other content, such as the terms of service for third-party models.
