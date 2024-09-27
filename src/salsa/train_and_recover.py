@@ -163,7 +163,7 @@ def get_parser():
         help="Shift of rows of A to train on if task = mlwe-i,"
     )
     #  Use compute_optimal_mlwe_shift.py script to get optimal shift (multiply cost by n), 
-    # otherwise run attack on all windows
+    # otherwise run attack on all/random shifts in [0,n-1]
 
     return parser
 

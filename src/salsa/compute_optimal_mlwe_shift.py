@@ -34,7 +34,7 @@ def compute_minhi_mlwe(s, n, k, cruel_bits, step=1):
             argmin = i+1
 
     optimal_shift = (-u-argmin)%n
-    return optimal_shift, minhi
+    return optimal_shift, argmin, minhi
 
 
 if __name__ == '__main__':
@@ -45,5 +45,9 @@ if __name__ == '__main__':
     secret = np.load(params.secret_path)
     n = len(secret)//params.k
 
-    optimal_shift, minhi = compute_minhi_mlwe(secret, n, params.k, params.nu)
-    print(f"Optimal shift of A is {optimal_shift} with {minhi} cruel secret bits")
+    optimal_shift, argmin, minhi = compute_minhi_mlwe(secret, n, params.k, params.nu)
+    print(
+        f"Optimal shift of A is A_shift={optimal_shift}" + 
+        f" corresponds to secret window start at secret_window={argmin}"+
+        f" with Min_i hw(s)={minhi} cruel secret bits"
+    )
