@@ -94,8 +94,6 @@ class LWEDataset(Dataset):
         A = A[:n_samples]
         b = b[:n_samples]
 
-        cls.check_data_quality(params, A, b)
-
         logger.info("Loaded A and b. [split: %s]", split)
 
         assert len(A) > 0
@@ -103,36 +101,6 @@ class LWEDataset(Dataset):
 
         logger.info("Loaded data. [root: %s, count: %d]", params.data_path, len(A))
         return A, b
-
-    @classmethod
-    def check_data_quality(cls, params, A, b):
-        def centered(arr):
-            arr = torch.clone(arr)
-            arr[arr > params.Q // 2] -= params.Q
-            return arr
-
-        # Gut check that data is loaded correctly.
-        good_err_std = (
-            torch.std(
-                centered(
-                    (A[0:5000] @ params.secret - torch.squeeze(b[0:5000])) % params.Q
-                ).type(torch.FloatTensor)
-            )
-            / params.Q
-        )
-        idx = torch.randperm(params.secret.shape[0])
-        logger.info("Good error std: %f", good_err_std)
-        bad_err_std = (
-            torch.std(
-                centered(
-                    (A[0:5000] @ params.secret[idx] - torch.squeeze(b[0:5000]))
-                    % params.Q
-                ).type(torch.FloatTensor)
-            )
-            / params.Q
-        )
-
-        logger.info("Bad err std: %f", bad_err_std)
 
     @classmethod
     def transform(cls, A, b, params):
@@ -211,11 +179,6 @@ class RLWEDataset(LWEDataset):
         return np.concatenate((tnsor[..., shift:], -tnsor[..., :shift]), axis=-1)
 
 class MLWEiDataset(RLWEDataset):
-    def __init__(self, params):
-        super().__init__(params)
-
-        assert params.cruel_bits > 0, "Must specify the number of cruel bits!"
-
     @classmethod
     def transform(cls, A, b, params):
         """Will 'decompress' RLWE a,b data by column swapping/negating RA matrices to reconstruct original circulant matrices."""
@@ -223,39 +186,16 @@ class MLWEiDataset(RLWEDataset):
         k = params.rlwe
         n = params.N // k
         Q = params.Q
-        nu = params.cruel_bits
-
-        assert params.cruel_bits > 0, f"# Cruel bits nu={nu} not provided"
-        minhi, argminhi = cls.compute_minhi_mlwe(params.secret, n, k, nu)
-
-        logger.info(f"min h(i, {nu}) = {minhi}, argmin = {argminhi}")
+        
         A = np.flip(A.reshape((len(A), k, n)), axis=2)
 
-        shift  = (n-nu//k+n-argminhi)%n
+        shift  = params.A_shift
         
         A = cls.shift_negate(A, shift) % Q
         
         A = A.reshape((len(A), k*n))
         b = b[:,~shift]
         return super(RLWEDataset, cls).transform(A, b, params)
-
-    @classmethod
-    def compute_minhi_mlwe(cls, s, n, k, cruel_bits, step=1):
-        assert k*n == len(s)
-        s = (s!=0).astype(int)
-        s = s.reshape((k,n)).T
-        u = cruel_bits//k
-        hi = s[:u].sum(axis=0).sum()
-        minhi = hi
-        argmin = 0
-
-        for i in range(0, n, step):
-            hi -= s[i].sum()
-            hi += s[(i+u)%n].sum()
-            if hi < minhi:
-                minhi = hi
-                argmin = i+1
-        return minhi, argmin
 
 
 class VRLWEDataset(LWEDataset):

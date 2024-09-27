@@ -87,7 +87,7 @@ If you want to get some statistics on your generated data, then run:
 #### SALSA Attack
 ```train_and_recover.py``` runs the transformer-based secret recovery attack with an encoder-only model by default. Below is an example command:
 
-`python3 src/salsa/train_and_recover.py --data_path ./testn80/binary_secrets_h5_6/ --exp_name salsa_demo --secret_seed 0 --rlwe 1 --task mlwe-i --angular_emb true --dxdistinguisher true --hamming 5 --cruel_bits 54 --train_batch_size 64 --val_batch_size 128 --n_enc_heads 8 --n_enc_layers 4 --enc_emb_dim 256 --base 1 --bucket_size 1 --dump_path ./testn80_salsa_logs --distinguisher_size 64`
+`python3 src/salsa/train_and_recover.py --data_path ./testn80/binary_secrets_h5_6/ --exp_name salsa_demo --secret_seed 0 --rlwe 1 --task mlwe-i --angular_emb true --dxdistinguisher true --hamming 5 --A_shift 42 --train_batch_size 64 --val_batch_size 128 --n_enc_heads 8 --n_enc_layers 4 --enc_emb_dim 256 --base 1 --bucket_size 1 --dump_path ./testn80_salsa_logs --distinguisher_size 64`
 
 (If you get errors about the test set size, either preprocess more data or make the distinguisher size parameter smaller.)
 
