@@ -81,9 +81,10 @@ def parse_args(default_args=None):
     parser.add_argument(
         "--secret_window",
         type=int,
-        help="If RLWE, which window to bruteforce",
+        help="If RLWE/MLWE, which window to bruteforce",
         default=0,
     )
+    # You can use src/salsa/compute_optimal_mlwe_shift.py or use a random window in [0,n-1].
     args = parser.parse_args(default_args)
     return args
 
@@ -111,10 +112,7 @@ def worker(args, device, start, stop):
         args.greedy_max_data = data.RA.shape[0]
 
     attacker = Attacker(
-        data.RA,
-        data.RB,
-        data.secret,
-        data.params.Q,
+        data,
         args.bf_dim,
         args.bf_max_data,
         args.greedy_max_data,

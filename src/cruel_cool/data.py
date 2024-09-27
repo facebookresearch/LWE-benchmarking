@@ -27,7 +27,6 @@ class Data:
     RB: np.ndarray
     origA: np.ndarray
     origB: np.ndarray
-    secret: np.ndarray
 
     @classmethod
     def from_files(cls, path, hamming_weight=None, seed=0):
@@ -47,13 +46,11 @@ class Data:
                 f"{prefix}/{secret_prefix}/train_b_{hamming_weight}_{seed}.npy"
             )
 
-        secret = np.load(f"{prefix}/{secret_prefix}/secret_{hamming_weight}_{seed}.npy")
         try:
             As = np.load(f"{prefix}/reduced_A.npy")
         except:
             As = np.load(f"{prefix}/train_A.npy")
 
-        secret = np.load(f"{prefix}/{secret_prefix}/secret_{hamming_weight}_{seed}.npy")
         origAs = np.load(f"{prefix}/orig_A.npy")
         origBs = np.load(f"{prefix}/{secret_prefix}/orig_b_{hamming_weight}_{seed}.npy")
         return cls(
@@ -62,7 +59,6 @@ class Data:
             RB=Bs,
             origA=origAs,
             origB=origBs,
-            secret=secret,
         )
 
     @staticmethod
@@ -124,7 +120,6 @@ class Data:
             RB=RBs,
             origA=origA,
             origB=origB,
-            secret=secret,
         )
 
     @staticmethod
@@ -199,12 +194,6 @@ class MLWEData(Data):
         hamming_weight = hamming_weight or params.min_hamming
         params.hamming = hamming_weight
 
-        secret = np.load(f"{prefix}/{secret_prefix}/secret_{hamming_weight}_{seed}.npy")
-
-        if secret_window == -1:
-            minhi, secret_window = cls.compute_minhi_mlwe(secret, n, mlwe_k, bf_dim)
-            logger.info(f"Computed shift to apply {secret_window}: minhi = {minhi}")
-
         try:
             Bs = np.load(
                 f"{prefix}/{secret_prefix}/train_b_{hamming_weight}_{seed}.npy"
@@ -223,48 +212,23 @@ class MLWEData(Data):
 
         assert As.shape[0] == len(Bs)
 
-        As = np.flip(As.reshape((len(As), mlwe_k, n)), axis=2)
+        def get_shift(A, mlwe_k, n, A_shift):
+            A = np.flip(A.reshape((len(A), mlwe_k, n)), axis=2)
 
-        As = cls.shift_negate(As, k=A_shift) % Q
-        As = As.reshape((len(As), mlwe_k * n))
-
-        secret = np.load(f"{prefix}/{secret_prefix}/secret_{hamming_weight}_{seed}.npy")
-
-        # Check data correctness:
-        errors = (As @ secret - Bs) % Q
-        errors[errors > Q // 2] -= Q
-        error_std = errors.std()
-        uniform_std = np.sqrt((Q * Q - 1) / 12)
-        assert (
-            error_std < 0.95 * uniform_std
-        ), "Error std is too close to uniform, check the data!"
-        logger.info(f"Data quality checked data shapes: {As.shape} {Bs.shape}")
+            A = cls.shift_negate(A, k=A_shift) % Q
+            return A.reshape((len(A), mlwe_k * n))
+        
+        As = get_shift(As, mlwe_k, n, A_shift)
+        
         origAs = np.load(f"{prefix}/orig_A.npy")
         origBs = np.load(f"{prefix}/{secret_prefix}/orig_b_{hamming_weight}_{seed}.npy")
+        origAs = get_shift(origAs, mlwe_k, n, A_shift)
+        origBs = origBs[:, ~A_shift]
         return cls(
             params=params,
             RA=As,
             RB=Bs,
             origA=origAs,
             origB=origBs,
-            secret=secret,
             secret_window=secret_window,
         )
-
-    @classmethod
-    def compute_minhi_mlwe(cls, s, n, k, cruel_bits, step=1):
-        assert k * n == len(s)
-        s = (s != 0).astype(int)
-        s = s.reshape((k, n)).T
-        u = cruel_bits // k
-        hi = s[:u].sum(axis=0).sum()
-        minhi = hi
-        argmin = 0
-
-        for i in range(0, n, step):
-            hi -= s[i].sum()
-            hi += s[(i + u) % n].sum()
-            if hi < minhi:
-                minhi = hi
-                argmin = i + 1
-        return minhi, argmin

@@ -116,7 +116,7 @@ To figure out how many cruel bits are in your preprocessed data, run:
 
 Then, run the attack (make sure bf_dim (# cruel bits) matches result from above):
 
-`python3 src/cruel_cool/main.py --path ./testn80/binary_secrets_h5_6/ --exp_name cc_demo --greedy_max_data 100000 --keep_n_tops 1 --batch_size 10000 --compile_bf 0 --mlwe_k 1 --secret_window -1  --full_hw 5 --secret_type binary --bf_dim 54 --min_bf_hw 1 --max_bf_hw 5 --seed 0 --dump_path /path/to/save/checkpoints/logs`
+`python3 src/cruel_cool/main.py --path ./testn80/binary_secrets_h5_6/ --exp_name cc_demo --greedy_max_data 100000 --keep_n_tops 1 --batch_size 10000 --compile_bf 0 --mlwe_k 1 --secret_window 49  --full_hw 5 --secret_type binary --bf_dim 54 --min_bf_hw 1 --max_bf_hw 5 --seed 0 --dump_path /path/to/save/checkpoints/logs`
 
 ### Running the USVP Attack
 First, generate a secret to use in the test attack via the command:
