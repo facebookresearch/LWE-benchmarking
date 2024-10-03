@@ -352,8 +352,9 @@ class MITM(object):
 
         self.mitm_alpha, self.scale = mitm_params(self.sigma, self.Q, self.N, self.params.hamming) # Use the REDUCTION hamming for scale parameter. 
         self.logger.info("alpha={}, scale={}".format(self.mitm_alpha, self.scale))
-        self.logger.info(f"Secret is: {self.s}")
-        self.logger.info(f"Secret to guess is: {self.s[-self.k:]}, nonzero elements: {np.where(self.s[-self.k:] != 0)}")
+        if self.params.debug == True:
+            self.logger.info(f"Secret is: {self.s}")
+            self.logger.info(f"Secret to guess is: {self.s[-self.k:]}, nonzero elements: {np.where(self.s[-self.k:] != 0)}")
 
     
     def get_error(self, shape):
@@ -464,7 +465,6 @@ class MITM(object):
             A = origA[i]
             bvecs = origB[i]
 
-
             # If MLWE, circulate accordingly. 
             if self.mlwe_k > 0:
                 a = []
@@ -535,13 +535,14 @@ class MITM(object):
             if lsh_vec in Table:
                 self.logger.info("found possible match")
                 for s in Table[lsh_vec]:
-                    sgnbits = list(itertools.product(np.unique(self.s[self.s != 0]), repeat=len(s)))
+                    sgnbits = list(itertools.product(self.get_possible_bit_values(), repeat=len(s)))
                     for sgn in sgnbits:
                         vec = centered(sum(A[i]*_sgn for i, _sgn in zip(s, sgn)) % self.Q, self.Q)
                         diff = centered((query - vec) % self.Q, self.Q)
                         self.logger.info(f"diff: {diff}")
                         self.logger.info(f"bound = {self.bound}, metrics on diff - norm: {np.linalg.norm(diff, np.inf)}, mean: {np.mean(np.abs(diff))}, std: {np.std(np.abs(diff))}, median: {np.median(np.abs(diff))}")
-                        self.logger.info(f"guess = {s}, {sgn}; other half = {orig_s}; true = {np.nonzero(self.s[-self.k:])}, {self.s[-self.k:][np.nonzero(self.s[-self.k:])[0]]}")
+                        if self.params.debug == True:
+                            self.logger.info(f"guess = {s}, {sgn}; other half = {orig_s}; true = {np.nonzero(self.s[-self.k:])}, {self.s[-self.k:][np.nonzero(self.s[-self.k:])[0]]}")
                         # NOTE: using the linalg norm lets outliers dominate, which is bad, so we use median value instead. 
                         if np.median(np.abs(diff)) < self.bound:
                             return (s, sgn)
@@ -567,6 +568,18 @@ class MITM(object):
         v = self.check_collision(query, A, sgnvec, Table, boundary_idx, index_num = 0, orig_s=orig_s)
         return v
 
+    def get_possible_bit_values(self):
+        if self.secret_type == 'binary':
+            return [0, 1]
+        elif self.secret_type == 'ternary':
+            return [-1, 0, 1]
+        elif self.secret_type == 'binomial':
+            return list(np.range(-self.gamma, self.gamma+1))
+        elif self.secret_type == 'gaussian':
+            return list(np.range(-self.sigma*2, self.sigma*2)) # Guesstimate
+        else:
+            raise ValueError(f"Unknown secret type: {self.secret_type}")
+        
 
     def build_and_search(self, shortA, shortb, half):
         '''
@@ -575,25 +588,26 @@ class MITM(object):
         T = {}
         AT = shortA.T
         count = 0
-        bits = [el for el in np.unique(self.s[self.s != 0])] # Get nonzero secret bit values. 
+        bits = self.get_possible_bit_values()
    
-        # Cheating, just to get a sense of where the secret bits are. We don't use this info to recover secret. 
-        sidx = np.where(self.s[-self.k:] != 0)[0]
-        svals = self.s[-self.k:][sidx]
-        half_sk = len(sidx) // 2
-        firsthalf = centered(sum(AT[i]*s for i, s in zip(sidx[:half_sk], svals[:half_sk])) % self.Q, self.Q)
-        secondhalf = centered(sum(AT[i]*s for i, s in zip(sidx[half_sk:],svals[half_sk:])) % self.Q, self.Q)
-        bad = centered(sum(AT[i]*s for i, s in zip((13, 14), (1,1))) % self.Q, self.Q)
-        good1 = centered(((shortb - secondhalf) % self.Q -firsthalf) % self.Q, self.Q).astype(int)
-        good2 = centered(((shortb - firsthalf) % self.Q - secondhalf) % self.Q, self.Q).astype(int)
-        bad1 = centered((shortb - bad) % self.Q, self.Q).astype(int)
-        self.logger.info(f'Stats on good half1: max={np.max(good1)}, median={np.median(np.abs(good1))}, mean={ np.mean(np.abs(good1))}')
-        self.logger.info(good1)
-        self.logger.info(f'Stats on good half2: max={np.max(good2)}, median={np.median(np.abs(good2))}, mean={ np.mean(np.abs(good2))}')
-        self.logger.info(good2)
-        self.logger.info(f'Stats on bad: max={np.max(bad1)}, median={np.median(np.abs(bad1))}, mean={ np.mean(np.abs(bad1))}')
-        self.logger.info(bad1)
+
         if self.params.debug==True:
+            # Just get a sense of where secret bits are. We don't use this info to recover secret. 
+            sidx = np.where(self.s[-self.k:] != 0)[0]
+            svals = self.s[-self.k:][sidx]
+            half_sk = len(sidx) // 2
+            firsthalf = centered(sum(AT[i]*s for i, s in zip(sidx[:half_sk], svals[:half_sk])) % self.Q, self.Q)
+            secondhalf = centered(sum(AT[i]*s for i, s in zip(sidx[half_sk:],svals[half_sk:])) % self.Q, self.Q)
+            bad = centered(sum(AT[i]*s for i, s in zip((13, 14), (1,1))) % self.Q, self.Q)
+            good1 = centered(((shortb - secondhalf) % self.Q -firsthalf) % self.Q, self.Q).astype(int)
+            good2 = centered(((shortb - firsthalf) % self.Q - secondhalf) % self.Q, self.Q).astype(int)
+            bad1 = centered((shortb - bad) % self.Q, self.Q).astype(int)
+            self.logger.info(f'Stats on good half1: max={np.max(good1)}, median={np.median(np.abs(good1))}, mean={ np.mean(np.abs(good1))}')
+            self.logger.info(good1)
+            self.logger.info(f'Stats on good half2: max={np.max(good2)}, median={np.median(np.abs(good2))}, mean={ np.mean(np.abs(good2))}')
+            self.logger.info(good2)
+            self.logger.info(f'Stats on bad: max={np.max(bad1)}, median={np.median(np.abs(bad1))}, mean={ np.mean(np.abs(bad1))}')
+            self.logger.info(bad1)
             input()
 
         for h in range(1, half):
@@ -649,23 +663,48 @@ class MITM(object):
                             for i, sval in zip(_s1, s1_sign):
                                 s[i] = sval
                             self.logger.info(f"Guessed secret is: {s.astype(int)}")
-                            self.logger.info(f"Real secret is: {self.s[-self.k:]}")
-                            if np.all(s == self.s[-self.k:]):
+
+                            if self.params.debug == True: # If debugging, use the real secret to guess.
+                                self.logger.info(f"Real secret is: {self.s[-self.k:]}")
+                                if np.all(s == self.s[-self.k:]):
+                                    return
+                                else:
+                                    self.logger.info("Close but not quite.")
+                            else: #  use LA method from Cheon to confirm guess. 
+                                # A, c, query, A_s == vec from Cheon, q
+                                error = query - A_s
+                                _shortb = (shortb - error) % self.Q
+                                # Save off, including q, for sage computation
+                                qvec = np.zeros((shortA.shape[1]+1))
+                                qvec[0] = self.Q
+                                _Ab_save = np.hstack((shortA, _shortb[:,np.newaxis])) #, qvec))
+                                _Abq_save = np.vstack((_Ab_save, qvec))
+                                np.save(os.path.join(self.params.dump_path, f"tempAbq.npy"), _Abq_save) 
+
+                                # Subprocess runs sage
+                                from sage_scripts.recover_secret import main
+                                main(os.path.join(self.params.dump_path, f"tempAbq.npy"))
                                 return
-                            else:
-                                self.logger.info("Close but not quite.")
+                                                            
+                                    
+                                    
 
     def run_mitm(self, shortA, shortb):
         # First, generate the table.
-        if self.hamming % 2 == 0:
-            half = self.hamming // 2
+        if self.params.num_bits_in_table < 0: # Maximum number of bits in table secret guesses.
+            if self.hamming % 2 == 0:
+                half = self.hamming // 2
+            else:
+                half = self.hamming // 2 + 1
         else:
-            half = self.hamming // 2 + 1
-        # Make sure that sufficient bits are in table: 
-        s_half_true = self.s[-self.k:].sum()
-        if half < s_half_true:
-            print(f"Half of h is {half}, true bits to guess is {s_half_true}")
-            half = s_half_true
+            half = self.params.num_bits_in_table # The above should work but you can change it if you want. 
+
+        if self.params.debug == True:  # Make sure that sufficient bits are in table: 
+            s_half_true = self.s[-self.k:].sum()
+            if half < s_half_true:
+                print(f"Half of h is {half}, true bits to guess is {s_half_true}")
+                half = s_half_true
+
         # Faster way to do this
         self.build_and_search(shortA, shortb, int(half))
 

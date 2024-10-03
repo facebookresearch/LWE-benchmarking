@@ -78,6 +78,7 @@ def get_parser():
     parser.add_argument("--gamma", type=float, default=2, help="gamma for binomial error")
     parser.add_argument("--hamming", type=int, default=-1, 
                         help="hamming weight of secret")
+    parser.add_argument("--num_bits_in_table", type=int, default=-1, help="Number of bits we assume are in table. Default is hamming // 2.")
     parser.add_argument("--secret_type", type=str, default='binary', help="what secret distribution")
     parser.add_argument('--mlwe_k', type=int, default=0) # LWE = 0, RLWE=1, MLWE = k > 1 (k is the number of modules). 
 
