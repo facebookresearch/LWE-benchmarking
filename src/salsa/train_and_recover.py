@@ -157,11 +157,13 @@ def get_parser():
         help="Training Task, possible values: lwe, rlwe-all, mlwe-i"
     )
     parser.add_argument(
-        "--cruel_bits",
+        "--A_shift",
         type=int,
-        default=-1,
-        help="Number of cruel bits if task = mlwe-i"
+        default=0,
+        help="Shift of rows of A to train on if task = mlwe-i,"
     )
+    #  Use compute_optimal_mlwe_shift.py script to get optimal shift (multiply cost by n), 
+    # otherwise run attack on all/random shifts in [0,n-1]
 
     return parser
 

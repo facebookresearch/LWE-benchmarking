@@ -299,9 +299,6 @@ def load_params(params):
     params.gamma = data["gamma"]
     params.secret_type = data["secret_type"]
 
-    secret_filename = f"secret_{params.hamming}_{params.secret_seed}.npy"
-    params.secret = np.load(os.path.join(params.data_path, secret_filename))
-
     return params
 
 def init_rng(seed, logger):

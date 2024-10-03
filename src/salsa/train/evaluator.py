@@ -169,16 +169,12 @@ class SecretCheck:
 
         # Only need this for gaussian secret; eventually we won't need it.
         self.secret_type = params.secret_type
-        self.secret = params.secret
 
     def match_secret(self, guess):
         """Takes an int or bool (binary) list or array as secret guess and check against
         the original tiny dataset.
         """
         guess = np.array(guess).astype(int)
-        if self.secret_type == "gaussian":
-            # only check if nonzeros are identified for gaussian
-            return np.all((self.secret != 0) == (guess != 0))
 
         err_pred = (self.A @ guess - self.b) % self.Q
         err_pred[err_pred > self.Q // 2] -= self.Q
@@ -301,19 +297,6 @@ class TwoBitDistinguisher(BaseDistinguisher):
             diffs
         )  # sorted secret indices. Closer to the end means more likely nonzero.
 
-        # cheat, just to make sure you got all the nonzero bits.
-        logger.info(
-            f"Real secret: <0: {set(np.where(self.params.secret <0)[0])}, >0: {set(np.where(self.params.secret >0)[0])}"
-        )
-        if set(idx_sorted[-self.params.hamming :]) != set(
-            np.where(self.params.secret != 0)[0]
-        ):
-            logger.info(
-                f"Nonzero bits not identified. Guess: %s",
-                idx_sorted[-self.params.hamming :],
-            )
-            return False
-        self.secret_log["partial_success"] = True
 
         # eliminate the cases of h=1 and 2
         if self.check_cliques([[0], []], nonzeros=idx_sorted[-1:]):
@@ -703,7 +686,7 @@ class SlopeDistinguisher(BaseDistinguisher):
     def __init__(self, params, secret_check, secret_log):
         super().__init__(params, secret_check, secret_log)
 
-        self.N = len(params.secret)
+        self.N = params.N
         self.Q = params.Q
         self.distinguisher_size = params.distinguisher_size
         self.device = params.device

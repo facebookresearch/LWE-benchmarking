@@ -158,10 +158,7 @@ class Attacker:
 
     def __init__(
         self,
-        RAs,
-        RBs,
-        true_secret,
-        Q,
+        data,
         brute_force_dim,
         n_data_for_brute_force,
         n_data_for_greedy,
@@ -174,9 +171,17 @@ class Attacker:
         mlwe_k=False,
         secret_window=0,
     ):
-        RAs = RAs / Q * 10
-        RBs = RBs / Q * 10
-        Q = 10
+        RAs = data.RA
+        RBs = data.RB
+        self.origA = data.origA
+        self.origB = data.origB
+        self.origQ = data.params.Q
+        self.sigma = data.params.sigma
+      
+        self.Q = 10
+        RAs = RAs / self.origQ * self.Q
+        RBs = RBs / self.origQ * self.Q
+   
 
         self.RAs = torch.tensor(RAs, dtype=torch.float16)
         self.RBs = torch.tensor(RBs, dtype=torch.float16)
@@ -185,7 +190,7 @@ class Attacker:
         selection_for_G = torch.randperm(len(RAs))[:n_data_for_greedy]
 
         window_start = 0
-        self.secret_dim = len(true_secret)
+        self.secret_dim = data.params.N
 
         if mlwe_k:
             window_start = secret_window
@@ -206,8 +211,7 @@ class Attacker:
         self.RBs_G = torch.tensor(RBs[selection_for_G], dtype=torch.float16)
 
         self.brute_force_dim = brute_force_dim
-        self.true_secret = torch.tensor(true_secret)
-        self.Q = Q
+    
         self.keep_n_tops = keep_n_tops
         self.check_every_n_batches = check_every_n_batches
         self.batch_size = batch_size
@@ -233,8 +237,11 @@ class Attacker:
         return dim_selection_for_bf, complementary_partition
 
     def secret_found(self, cand):
-        return (cand.to(device=self.true_secret.device) == self.true_secret).all()
-
+        cand = cand.cpu().numpy()
+        err_pred = (self.origA @ cand - self.origB) % self.origQ
+        err_pred[err_pred > self.origQ // 2] -= self.origQ
+        return (np.std(err_pred) < 2 * self.sigma).item()
+    
     def check_partial_candidates(
         self, cands, RAs_G, RBs_G, which="linear", possible_values=[1, 2, 3]
     ):
@@ -248,23 +255,11 @@ class Attacker:
             else:
                 raise ValueError(f'unknown method for secret completion "{which}"')
             found = self.secret_found(full_cand)
-            if (
-                cand.cpu() == self.true_secret[self.dim_selection_for_bf]
-            ).all() and not found:
-                logger.info(
-                    "brute force worked, greedy failed! increase size of dataset"
-                )
-                sys.exit()
+            
             if found:
-                logger.info("SUCCESS!")
+                logger.info(f"SUCCESS! secret non zeros {full_cand.cpu().numpy().nonzero()}")
                 return True
-            # if we passed the secret, abort too
-
-            if (cand.cpu() != 0).sum() > (
-                self.true_secret[self.dim_selection_for_bf] != 0
-            ).sum():
-                logger.info("brute force failed.. increase size of dataset")
-                sys.exit()
+           
         return False
 
     @torch.inference_mode()
@@ -371,16 +366,6 @@ class Attacker:
 
         return hw_idxs
 
-    def check_if_this_can_work(self, hw_idxs):
-        n_cruel_bits = (self.true_secret[self.dim_selection_for_bf] != 0).sum().item()
-        logger.info(
-            f"checking if this can work, secret has {n_cruel_bits} cruel bits, using {hw_idxs}"
-        )
-
-        if n_cruel_bits in hw_idxs:
-            return True
-        return False
-
     @torch.no_grad()
     @torch.inference_mode()
     def brute_force_worker(
@@ -393,12 +378,6 @@ class Attacker:
     ):
         hw_idxs = self.calculate_idxs_for_each_hw(min_HW, max_HW, start_idx, stop_idx)
         logger.info(hw_idxs)
-
-        if not self.check_if_this_can_work(hw_idxs):
-            logger.info(
-                "aborting early, no point in running this, assume it runs for the full time and finds nothing"
-            )
-            return False
 
         top_n = [
             torch.zeros(self.keep_n_tops, device=device, dtype=torch.float16),
