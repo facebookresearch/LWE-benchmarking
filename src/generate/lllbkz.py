@@ -119,7 +119,7 @@ def calc_std_usvp(X, orig_std, Q, m, n):
     """
     mat = X[
         :-1, n : (m + n)
-    ]  # A is in right half of matrix, avoid bottom row and last col.
+    ].copy() # A is in right half of matrix, avoid bottom row and last col.
     mat[mat > Q // 2] -= Q
     return np.std(mat[np.any(mat != 0, axis=1)]) / orig_std
 
@@ -127,7 +127,7 @@ def calc_std_usvp(X, orig_std, Q, m, n):
 def calc_std(X, Q, m):
     mat = (
         X[:, m:] % Q
-    )  # A is in right half of matrix, mat is now a new matrix with entries copied from X
+    ).copy()  # A is in right half of matrix, mat is now a new matrix with entries copied from X
     mat[mat > Q // 2] -= Q
     return np.sqrt(12) * np.std(mat[np.any(mat != 0, axis=1)]) / Q
 
