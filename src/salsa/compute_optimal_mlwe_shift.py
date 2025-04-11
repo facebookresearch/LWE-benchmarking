@@ -43,11 +43,32 @@ if __name__ == '__main__':
     assert params.k > 0 and params.secret_path
     
     secret = np.load(params.secret_path)
-    n = len(secret)//params.k
+    if len(secret.shape) > 1:
+        s = secret.copy()
+        s[s!=0] =1
+        hs = np.sum(s, axis=0)
+        curr_h = hs[0]
+        curr_seed = 0
+        for i, h in enumerate(hs):
+            if h != curr_h:
+                curr_seed = 0 # reset seed
+                curr_h = h
+            curr_s = secret[:, i]
+            n = len(curr_s) // params.k
+            optimal_shift, argmin, minhi = compute_minhi_mlwe(curr_s, n, params.k, params.nu)
+            curr_seed += 1
+            print(
+                f"Hamming weight {curr_h}, seed {curr_seed}:\n" + 
+                f"Optimal shift of A is A_shift={optimal_shift}" + 
+                f" corresponds to secret window start at secret_window={argmin}"+
+                f" with Min_i hw(s)={minhi} cruel secret bits\n"            )
 
-    optimal_shift, argmin, minhi = compute_minhi_mlwe(secret, n, params.k, params.nu)
-    print(
-        f"Optimal shift of A is A_shift={optimal_shift}" + 
-        f" corresponds to secret window start at secret_window={argmin}"+
-        f" with Min_i hw(s)={minhi} cruel secret bits"
-    )
+    else: # edge case for codebase, our secret.npy files usually contain multiple secrets
+    
+        n = len(secret)//params.k
+        optimal_shift, argmin, minhi = compute_minhi_mlwe(secret, n, params.k, params.nu)
+        print(
+            f"Optimal shift of A is A_shift={optimal_shift}" + 
+            f" corresponds to secret window start at secret_window={argmin}"+
+            f" with Min_i hw(s)={minhi} cruel secret bits"
+        )
