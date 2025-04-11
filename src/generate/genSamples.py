@@ -138,7 +138,7 @@ class Generator(object):
         try:
             env = {**os.environ, "OMP_NUM_THREADS": "1"}
             p = Popen(
-                ["flatter", "-alpha", str(self.alpha)], stdin=PIPE, stdout=PIPE, env=env
+                ["/private/home/ewenger/usr/bin/flatter", "-alpha", str(self.alpha)], stdin=PIPE, stdout=PIPE, env=env
             )
         except Exception as e:
             self.logger.info(f"flatter failed with error {e}")
