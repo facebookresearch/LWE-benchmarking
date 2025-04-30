@@ -51,9 +51,9 @@ For the SALSA and CC attacks, the preprocessing step is time and resource-intens
 - (Kyber) $n=256, k=2,log_2 q = 12$ (625MB compressed --> 5.4GB uncompressed): https://dl.fbaipublicfiles.com/lwe-benchmarking/256_k2_12_omega4_mlwe_data_prefix.tar.gz
 - (Kyber) $n=256, k=2,log_2 q = 28$ (5.1GB compressed --> 14GB uncompressed): https://dl.fbaipublicfiles.com/lwe-benchmarking/256_k2_28_omega4_mlwe_data_prefix.tar.gz
 - (Kyber) $n=256, k=3, log_2 q = 35$ (12GB compressed --> 34GB uncompressed): https://dl.fbaipublicfiles.com/lwe-benchmarking/256_k3_35_omega4_mlwe_data_prefix.tar.gz
-- (HE) $n=1024, log_2 q = 26$ (5GB compressed --> 21GB uncompressed): https://dl.fbaipublicfiles.com/1024_26_omega10_rlwe_data_prefix.tar.gz
-- (HE) $n=1024, log_2 q = 29$ (6 GB compressed --> 24GB uncompressed): https://dl.fbaipublicfiles.com/1024_29_omega10_rlwe_data_prefix.tar.gz
-- (HE) $n=1024, log_2 q = 50$ (18GB compressed --> 46GB uncompressed): https://dl.fbaipublicfiles.com/1024_50_omega10_rlwe_data_prefix.tar.gz
+- (HE) $n=1024, log_2 q = 26$ (5GB compressed --> 21GB uncompressed): https://dl.fbaipublicfiles.com/lwe-benchmarking/1024_26_omega10_rlwe_data_prefix.tar.gz
+- (HE) $n=1024, log_2 q = 29$ (6 GB compressed --> 24GB uncompressed): https://dl.fbaipublicfiles.com/lwe-benchmarking/1024_29_omega10_rlwe_data_prefix.tar.gz
+- (HE) $n=1024, log_2 q = 50$ (18GB compressed --> 46GB uncompressed): https://dl.fbaipublicfiles.com/lwe-benchmarking/1024_50_omega10_rlwe_data_prefix.tar.gz
 
 When downloading these, make sure you place them in a place with enough storage. Then, run the following command to restore them to original format. If you want our attack pipeline to flow smoothly, you should either unzip these files directly in ./data/benchmark_paper_data/{appropriate folder} or symlink them to that directory. 
 ```
