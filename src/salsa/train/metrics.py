@@ -93,8 +93,8 @@ class AngularDistanceMetric(torchmetrics.Metric):
     def update(self, outputs, targets) -> None:
         _, cols = outputs.shape
         assert cols == 2, f"outputs should have 2 columns, not {cols}"
-        pred_angles = torch.atan(outputs[:, 0] / outputs[:, 1])
-        tgt_angles = torch.atan(targets[:, 0] / targets[:, 1])
+        pred_angles = torch.atan2(outputs[:, 1], outputs[:, 0])
+        tgt_angles = torch.atan2(targets[:, 1], targets[:, 0])
         diff = torch.abs(pred_angles - tgt_angles)
         self.sum_dist += torch.mean(torch.minimum(diff, torch.pi * 2 - diff))
         self.total_batches += 1
