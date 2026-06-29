@@ -138,10 +138,10 @@ class Generator(object):
         try:
             env = {**os.environ, "OMP_NUM_THREADS": "1"}
             p = Popen(
-                ["/private/home/ewenger/usr/bin/flatter", "-alpha", str(self.alpha)], stdin=PIPE, stdout=PIPE, env=env
+                ["flatter", "-alpha", str(self.alpha)], stdin=PIPE, stdout=PIPE, env=env
             )
         except Exception as e:
-            self.logger.info(f"flatter failed with error {e}")
+            raise RuntimeError("Could not launch 'flatter'. Is it installed and on PATH?") from e
         out, _ = p.communicate(input=fplll_Ap_encoded)  # output from the flatter run.
         Ap = decode_intmat(out)
         if self.params.rand_rows:

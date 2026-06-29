@@ -44,7 +44,7 @@ def reduce_with_flatter(Ap, alpha=0.025):
     try:
         p = Popen(["flatter", "-alpha", str(alpha)], stdin=PIPE, stdout=PIPE, env=env)
     except Exception as e:
-        logger.error(f"flatter failed with error {e}")
+        raise RuntimeError("Could not launch 'flatter'. Is it installed and on PATH?") from e
     out, _ = p.communicate(input=fplll_Ap_encoded)  # output from the flatter run.
     Ap = decode_intmat(out)
     return Ap
