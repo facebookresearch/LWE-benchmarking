@@ -145,7 +145,7 @@ class Generator(object):
         try:
             env = {**os.environ, "OMP_NUM_THREADS": "1"}
             p = Popen(
-                ["flatter", "-alpha", str(self.alpha)], stdin=PIPE, stdout=PIPE, env=env
+                [flatter_path, "-alpha", str(self.alpha)], stdin=PIPE, stdout=PIPE, env=env
             )
         except Exception as e:
             raise RuntimeError(

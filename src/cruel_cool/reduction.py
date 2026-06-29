@@ -49,7 +49,7 @@ def reduce_with_flatter(Ap, alpha=0.025):
     env = os.environ.copy()
     env["OMP_NUM_THREADS"] = "1"
     try:
-        p = Popen(["flatter", "-alpha", str(alpha)], stdin=PIPE, stdout=PIPE, env=env)
+        p = Popen([flatter_path, "-alpha", str(alpha)], stdin=PIPE, stdout=PIPE, env=env)
     except Exception as e:
         raise RuntimeError(
             f"'flatter' was found at '{flatter_path}' but could not be launched."
