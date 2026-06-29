@@ -92,7 +92,7 @@ def get_parser():
         "--float_type",
         type=str,
         default="dd",
-        help="double, long double, dpe, dd, qd, or mpfr_<precision>",
+        help="double, long double, dpe, dd, qd, or mpfr_<precision>. Note: dd/qd require fpylll built with QD support (use environment.yml via conda-forge, not pip).",
     )
     parser.add_argument(
         "--lll_penalty", type=int, default=1, help="penalty on norm of LLL Reduced A"

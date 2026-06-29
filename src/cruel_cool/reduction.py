@@ -8,6 +8,7 @@ LICENSE file in the root directory of this source tree.
 
 from logging import getLogger
 import os
+import shutil
 import numpy as np
 from subprocess import Popen, PIPE
 import sys
@@ -39,12 +40,20 @@ def reduce_with_flatter(Ap, alpha=0.025):
     """
     fplll_Ap = IntegerMatrix.from_matrix(Ap.tolist())
     fplll_Ap_encoded = encode_intmat(fplll_Ap)
+    flatter_path = shutil.which("flatter")
+    if flatter_path is None:
+        raise RuntimeError(
+            "'flatter' not found on PATH. Install it and make sure it is on your PATH. "
+            "See https://github.com/keeganryan/flatter"
+        )
     env = os.environ.copy()
     env["OMP_NUM_THREADS"] = "1"
     try:
-        p = Popen(["flatter", "-alpha", str(alpha)], stdin=PIPE, stdout=PIPE, env=env)
+        p = Popen([flatter_path, "-alpha", str(alpha)], stdin=PIPE, stdout=PIPE, env=env)
     except Exception as e:
-        logger.error(f"flatter failed with error {e}")
+        raise RuntimeError(
+            f"'flatter' was found at '{flatter_path}' but could not be launched."
+        ) from e
     out, _ = p.communicate(input=fplll_Ap_encoded)  # output from the flatter run.
     Ap = decode_intmat(out)
     return Ap

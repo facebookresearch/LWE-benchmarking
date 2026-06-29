@@ -8,6 +8,7 @@ LICENSE file in the root directory of this source tree.
 
 import io
 import os
+import shutil
 import numpy as np
 from time import time
 from glob import glob
@@ -135,13 +136,21 @@ class Generator(object):
         self.logger.info(f"Worker {self.thread} starting new flatter run.")
         fplll_Ap = IntegerMatrix.from_matrix(Ap.tolist())
         fplll_Ap_encoded = encode_intmat(fplll_Ap)
+        flatter_path = shutil.which("flatter")
+        if flatter_path is None:
+            raise RuntimeError(
+                "'flatter' not found on PATH. Install it and make sure it is on your PATH. "
+                "See https://github.com/keeganryan/flatter"
+            )
         try:
             env = {**os.environ, "OMP_NUM_THREADS": "1"}
             p = Popen(
-                ["/private/home/ewenger/usr/bin/flatter", "-alpha", str(self.alpha)], stdin=PIPE, stdout=PIPE, env=env
+                [flatter_path, "-alpha", str(self.alpha)], stdin=PIPE, stdout=PIPE, env=env
             )
         except Exception as e:
-            self.logger.info(f"flatter failed with error {e}")
+            raise RuntimeError(
+                f"'flatter' was found at '{flatter_path}' but could not be launched."
+            ) from e
         out, _ = p.communicate(input=fplll_Ap_encoded)  # output from the flatter run.
         Ap = decode_intmat(out)
         if self.params.rand_rows:
