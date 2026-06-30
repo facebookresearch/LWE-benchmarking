@@ -184,8 +184,27 @@ class Generator(object):
         return Ap
 
     def run_lll_once(self, Ap):
-        # TODO this should run the LLL algo from fpylll
-        raise NotImplementedError("This is not implemented yet.")
+        """
+        Runs a single round of LLL.
+        """
+        self.logger.info(f"Worker {self.thread} starting new LLL run.")
+        fplll_Ap = IntegerMatrix.from_matrix(Ap.tolist())
+        M = GSO.Mat(fplll_Ap, float_type=self.float_type, update=True)
+        try:
+            lll_obj = LLL.Reduction(M, delta=self.delta)
+            lll_obj()
+        except Exception as e:
+            self.logger.info(e)
+            self.set_float_type(FLOAT_UPGRADE[self.float_type])
+            self.logger.info(f"Error running LLL. Upgrading to float type {self.float_type}.")
+            M = GSO.Mat(fplll_Ap, float_type=self.float_type, update=True)
+            lll_obj = LLL.Reduction(M, delta=self.delta)
+            lll_obj()
+        Ap = np.zeros((Ap.shape[0], Ap.shape[1]), dtype=np.int64)
+        fplll_Ap.to_matrix(Ap)
+        if self.params.rand_rows:
+            Ap = np.random.permutation(Ap)
+        return Ap
 
     def compute_stdev(self, Ap, UT, use_polish=True, save=True, algo="flatter"):
         if use_polish:
